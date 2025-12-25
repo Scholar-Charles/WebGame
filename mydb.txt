@@ -1,0 +1,135 @@
+-- =========================
+-- A) PLAYERS / USERS TABLE
+-- =========================
+CREATE TABLE players (
+    player_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(50) UNIQUE NOT NULL,
+
+    high_score BIGINT DEFAULT 0,
+    games_played INT DEFAULT 0 CHECK (games_played >= 0),
+    total_playtime_seconds BIGINT DEFAULT 0 CHECK (total_playtime_seconds >= 0),
+
+    registered_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_players_username ON players(username);
+
+-- =========================
+-- B) GAME SESSIONS TABLE
+-- =========================
+CREATE TABLE game_sessions (
+    session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    player_id UUID NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
+
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP,
+
+    final_score BIGINT DEFAULT 0,
+    level_reached INT DEFAULT 1 CHECK (level_reached >= 1),
+
+    duration_seconds BIGINT GENERATED ALWAYS AS (
+        EXTRACT(EPOCH FROM (end_time - start_time))
+    ) STORED
+);
+
+CREATE INDEX idx_game_sessions_player ON game_sessions(player_id);
+CREATE INDEX idx_game_sessions_start_time ON game_sessions(start_time);
+
+-- =========================
+-- C) AD CLICKS TABLE
+-- =========================
+CREATE TABLE ad_clicks (
+    click_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    player_id UUID REFERENCES players(player_id) ON DELETE SET NULL,
+    session_id UUID REFERENCES game_sessions(session_id) ON DELETE SET NULL,
+
+    ad_identifier VARCHAR(100) NOT NULL,
+    clicked_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    target_url TEXT NOT NULL,
+    source_context VARCHAR(100)
+);
+
+CREATE INDEX idx_ad_clicks_player ON ad_clicks(player_id);
+CREATE INDEX idx_ad_clicks_ad_identifier ON ad_clicks(ad_identifier);
+
+-- =========================
+-- D) LEADERBOARD TABLE
+-- =========================
+CREATE TABLE leaderboard (
+    leaderboard_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    player_id UUID NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
+
+    rank INT NOT NULL CHECK (rank > 0),
+    score BIGINT NOT NULL,
+    achieved_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_leaderboard_player ON leaderboard(player_id);
+CREATE INDEX idx_leaderboard_rank ON leaderboard(rank);
+
+-- =========================
+-- ACHIEVEMENTS TABLE (Recommended)
+-- =========================
+CREATE TABLE achievements (
+    achievement_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    player_id UUID NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
+
+    achievement_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    achieved_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_achievements_player ON achievements(player_id);
+
+
+CREATE TABLE towers (
+    tower_id SERIAL PRIMARY KEY,
+    tower_name VARCHAR(50) NOT NULL,
+    base_damage INT NOT NULL,
+    attack_speed FLOAT NOT NULL,
+    range FLOAT NOT NULL,
+    cost INT NOT NULL
+);
+
+
+CREATE TABLE tower_upgrades (
+    upgrade_id SERIAL PRIMARY KEY,
+    tower_id INT REFERENCES towers(tower_id) ON DELETE CASCADE,
+    upgrade_level INT NOT NULL,
+    damage_bonus INT DEFAULT 0,
+    speed_bonus FLOAT DEFAULT 0,
+    range_bonus FLOAT DEFAULT 0,
+    cost INT NOT NULL
+);
+
+
+CREATE TABLE enemies (
+    enemy_id SERIAL PRIMARY KEY,
+    enemy_name VARCHAR(50) NOT NULL,
+    base_hp INT NOT NULL,
+    speed FLOAT NOT NULL,
+    reward_gold INT NOT NULL
+);
+
+
+CREATE TABLE waves (
+    wave_id SERIAL PRIMARY KEY,
+    wave_number INT NOT NULL,
+    enemy_id INT REFERENCES enemies(enemy_id),
+    enemy_count INT NOT NULL,
+    spawn_interval FLOAT NOT NULL
+);
+
+
+CREATE TABLE session_stats (
+    stat_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES game_sessions(session_id) ON DELETE CASCADE,
+
+    towers_built INT DEFAULT 0,
+    towers_upgraded INT DEFAULT 0,
+    enemies_killed INT DEFAULT 0,
+    gold_earned INT DEFAULT 0
+);
+

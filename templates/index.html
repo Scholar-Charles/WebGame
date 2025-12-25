@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Defense - Home</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='35' y='20' width='30' height='60' fill='%23667eea'/><polygon points='20,80 50,50 80,80' fill='%23764ba2'/><rect x='45' y='10' width='10' height='15' fill='%23ffd700'/></svg>">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+<body>
+    <div class="home-container">
+        <div class="hero-section">
+            <h1>Tower Defense</h1>
+            <p>Build towers, defend your base, and dominate the leaderboard!</p>
+            
+            {% if user.is_authenticated %}
+                <div class="auth-buttons">
+                    <p>Welcome back, <strong>{{ user.username }}</strong>!</p>
+                    <a href="{% url 'game_home' %}" class="btn btn-primary">Play Game</a>
+                    <a href="{% url 'profile' %}" class="btn btn-secondary">My Profile</a>
+                    <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
+                </div>
+            {% else %}
+                <div class="auth-buttons">
+                    <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+                    <a href="{% url 'register' %}" class="btn btn-secondary">Register</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="features-section">
+            <h2>Game Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3> Strategic Towers</h3>
+                    <p>Place towers strategically to stop enemies before they reach your base.</p>
+                </div>
+                <div class="feature-card">
+                    <h3> Wave Attacks</h3>
+                    <p>Face increasingly difficult waves of enemies with unique abilities.</p>
+                </div>
+                <div class="feature-card">
+                    <h3> Upgrades</h3>
+                    <p>Upgrade your towers to deal more damage and cover larger areas.</p>
+                </div>
+                <div class="feature-card">
+                    <h3> Leaderboard</h3>
+                    <p>Compete with other players and reach the top of the leaderboard.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

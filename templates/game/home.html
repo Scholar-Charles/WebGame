@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Defense - Game</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='35' y='20' width='30' height='60' fill='%23667eea'/><polygon points='20,80 50,50 80,80' fill='%23764ba2'/><rect x='45' y='10' width='10' height='15' fill='%23ffd700'/></svg>">
+    <link rel="stylesheet" href="{% static 'css/game.css' %}">
+    ">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <div class="header-left">
+                <h1>Tower Defense</h1>
+            </div>
+            <div class="header-right">
+                <div class="player-info">
+                    <span>Player: <strong>{{ player.username }}</strong></span>
+                    <span>High Score: <strong>{{ player.high_score }}</strong></span>
+                    <span>Games: <strong>{{ player.games_played }}</strong></span>
+                </div>
+                <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+                <a href="{% url 'profile' %}" class="btn-profile">Profile</a>
+            </div>
+        </header>
+
+        <div class="game-content">
+            <aside class="game-sidebar">
+                <div class="towers-panel">
+                    <h3>Available Towers</h3>
+                    <div class="towers-list">
+                        {% for tower in towers %}
+                        <div class="tower-card" data-tower-id="{{ tower.tower_id }}">
+                            <h4>{{ tower.tower_name }}</h4>
+                            <p>Damage: {{ tower.base_damage }}</p>
+                            <p>Speed: {{ tower.attack_speed }}</p>
+                            <p>Range: {{ tower.range }}</p>
+                            <p class="tower-cost">Cost: {{ tower.cost }} 💰</p>
+                            <button class="btn-select-tower">Select</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="waves-panel">
+                    <h3>Wave Info</h3>
+                    <div id="waveDisplay">
+                        <p>Current Wave: <span id="currentWave">1</span></p>
+                        <p>Gold: <span id="playerGold">500</span> 💰</p>
+                        <p>Lives: <span id="playerLives">20</span> ❤️</p>
+                    </div>
+                </div>
+
+                <div class="game-controls">
+                    <button id="startGameBtn" class="btn-primary">Start Game</button>
+                    <button id="pauseGameBtn" class="btn-secondary" disabled>Pause</button>
+                    <button id="endGameBtn" class="btn-danger" disabled>End Game</button>
+                </div>
+            </aside>
+
+            <main class="game-canvas">
+                <canvas id="gameCanvas" width="800" height="600"></canvas>
+            </main>
+        </div>
+
+        <footer class="game-footer">
+            <a href="{% url 'leaderboard' %}">View Leaderboard</a>
+            <span id="scoreDisplay">Score: 0</span>
+        </footer>
+    </div>
+
+    <script src="{% static 'js/game.js' %}"></script>
+</body>
+</html>

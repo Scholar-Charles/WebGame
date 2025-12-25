@@ -1,0 +1,19 @@
+from django.db import models
+from django.contrib.auth.models import User
+import uuid
+
+class Player(models.Model):
+    player_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, db_column='auth_user_id')
+    
+    high_score = models.BigIntegerField(default=0)
+    games_played = models.IntegerField(default=0)
+    total_playtime_seconds = models.BigIntegerField(default=0)
+    registered_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'players'
+        managed = False
+
+    def __str__(self):
+        return self.user.username

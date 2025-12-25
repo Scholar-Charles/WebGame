@@ -1,0 +1,241 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #1a1a1a;
+    color: #fff;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.game-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.header-left h1 {
+    font-size: 28px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.player-info {
+    display: flex;
+    gap: 20px;
+}
+
+.player-info span {
+    font-size: 14px;
+}
+
+.btn-logout, .btn-profile {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid white;
+    border-radius: 5px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.3s;
+    font-size: 12px;
+}
+
+.btn-logout:hover, .btn-profile:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.game-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.game-sidebar {
+    width: 250px;
+    background: #2a2a2a;
+    padding: 20px;
+    overflow-y: auto;
+    border-right: 1px solid #444;
+}
+
+.towers-panel, .waves-panel, .game-controls {
+    margin-bottom: 20px;
+}
+
+.towers-panel h3, .waves-panel h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.towers-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.tower-card {
+    background: #333;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 2px solid #444;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.tower-card:hover {
+    border-color: #667eea;
+    background: #3a3a3a;
+}
+
+.tower-card h4 {
+    color: #667eea;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.tower-card p {
+    font-size: 12px;
+    color: #ccc;
+    margin: 4px 0;
+}
+
+.tower-cost {
+    color: #ffd700;
+    font-weight: 600;
+}
+
+.btn-select-tower {
+    width: 100%;
+    padding: 6px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-top: 8px;
+    transition: background 0.3s;
+}
+
+.btn-select-tower:hover {
+    background: #764ba2;
+}
+
+.waves-panel {
+    background: #333;
+    padding: 12px;
+    border-radius: 5px;
+}
+
+#waveDisplay {
+    font-size: 14px;
+}
+
+#waveDisplay p {
+    margin: 8px 0;
+}
+
+.game-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn-primary, .btn-secondary, .btn-danger {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #45a049;
+}
+
+.btn-secondary {
+    background: #2196F3;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #1976D2;
+}
+
+.btn-danger {
+    background: #f44336;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #da190b;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.game-canvas {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0f0f0f;
+}
+
+#gameCanvas {
+    background: #1a1a1a;
+    border: 2px solid #667eea;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.game-footer {
+    background: #2a2a2a;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #444;
+}
+
+.game-footer a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s;
+}
+
+.game-footer a:hover {
+    color: #764ba2;
+}
+
+#scoreDisplay {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffd700;
+}
