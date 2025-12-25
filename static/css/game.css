@@ -6,8 +6,10 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #1a1a1a;
     color: #fff;
+    min-height: 100vh;
+    background: url("{% static 'img/space-bg.jpg' %}") no-repeat center center fixed;
+    background-size: cover;
 }
 
 .game-container {
