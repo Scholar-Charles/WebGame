@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Idle MMORPG</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="container dashboard-page">
+        <div class="navbar">
+            <h1>⚔️ Idle MMORPG</h1>
+            <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+        </div>
+        
+        <div class="dashboard-content">
+            <h2>Welcome, {{ user.username }}!</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>High Score</h3>
+                    <p class="stat-value">{{ player.high_score }}</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Games Played</h3>
+                    <p class="stat-value">{{ player.games_played }}</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Playtime</h3>
+                    <p class="stat-value">{{ player.total_playtime }}s</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Member Since</h3>
+                    <p class="stat-value">{{ player.registration_date|date:"M d, Y" }}</p>
+                </div>
+            </div>
+            
+            <div class="game-area">
+                <h3>Game Coming Soon!</h3>
+                <p>Your idle game will load here...</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
