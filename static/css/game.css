@@ -1,0 +1,183 @@
+.game-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.game-header h1 {
+    color: #667eea;
+    margin: 0;
+}
+
+.game-stats {
+    display: flex;
+    gap: 30px;
+    flex: 1;
+    justify-content: center;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat .label {
+    display: block;
+    color: #666;
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+.stat .value {
+    display: block;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.game-content {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.game-area {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.player-character {
+    font-size: 6em;
+    margin-bottom: 20px;
+    position: relative;
+    display: inline-block;
+}
+
+.game-area h2 {
+    color: #667eea;
+    margin: 20px 0;
+}
+
+.btn-large {
+    padding: 15px 40px;
+    font-size: 1.2em;
+}
+
+.combo {
+    color: #764ba2;
+    font-size: 1.3em;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.damage-number {
+    position: absolute;
+    color: #ff6b6b;
+    font-weight: bold;
+    font-size: 1.5em;
+    animation: floatUp 1s ease-out;
+    pointer-events: none;
+}
+
+@keyframes floatUp {
+    to {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+}
+
+.game-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.upgrades-section,
+.achievements-section {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.upgrades-section h3,
+.achievements-section h3 {
+    color: #667eea;
+    margin-top: 0;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+}
+
+.upgrade {
+    background: #f5f5f5;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.upgrade h4 {
+    margin: 0 0 5px 0;
+    color: #333;
+}
+
+.upgrade p {
+    margin: 5px 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.upgrade-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.upgrade-btn:hover {
+    background: #5568d3;
+}
+
+.achievements-section {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 300px;
+}
+
+@media (max-width: 768px) {
+    .game-content {
+        grid-template-columns: 1fr;
+    }
+
+    .game-stats {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .game-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .player-character {
+        font-size: 4em;
+    }
+}

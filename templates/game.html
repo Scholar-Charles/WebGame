@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game - Idle MMORPG</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/game.css' %}">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>⚔️ Idle MMORPG</h1>
+            <div class="game-stats">
+                <div class="stat">
+                    <span class="label">Score:</span>
+                    <span class="value" id="score">0</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Level:</span>
+                    <span class="value" id="level">1</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Time:</span>
+                    <span class="value" id="timer">0s</span>
+                </div>
+            </div>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+
+        <div class="game-content">
+            <div class="game-area">
+                <div class="player-character">⚔️</div>
+                <h2>Click to Attack!</h2>
+                <button id="attackBtn" class="btn btn-primary btn-large">Attack Enemy</button>
+                <p id="combo" class="combo">Combo: 0</p>
+            </div>
+
+            <div class="game-sidebar">
+                <div class="upgrades-section">
+                    <h3>Upgrades</h3>
+                    <div class="upgrade" id="upgrade1">
+                        <h4>Speed Boost</h4>
+                        <p>Cost: 100 points</p>
+                        <button class="upgrade-btn" onclick="buyUpgrade(1)">Buy</button>
+                    </div>
+                    <div class="upgrade" id="upgrade2">
+                        <h4>Damage Multiplier</h4>
+                        <p>Cost: 250 points</p>
+                        <button class="upgrade-btn" onclick="buyUpgrade(2)">Buy</button>
+                    </div>
+                    <div class="upgrade" id="upgrade3">
+                        <h4>Auto Attack</h4>
+                        <p>Cost: 500 points</p>
+                        <button class="upgrade-btn" onclick="buyUpgrade(3)">Buy</button>
+                    </div>
+                </div>
+
+                <div class="achievements-section">
+                    <h3>Achievements</h3>
+                    <div id="achievements-list">
+                        <p>No achievements yet. Keep playing!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            score: 0,
+            level: 1,
+            startTime: Date.now(),
+            sessionId: null,
+            combo: 0,
+            autoAttackActive: false,
+            damageMultiplier: 1,
+            baseAttackSpeed: 1000
+        };
+
+        // Start game session
+        async function startGame() {
+            try {
+                const response = await fetch('{% url "start_session" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                const data = await response.json();
+                gameState.sessionId = data.session_id;
+                console.log('Game session started:', gameState.sessionId);
+            } catch (error) {
+                console.error('Error starting session:', error);
+            }
+        }
+
+        // Attack button click
+        document.getElementById('attackBtn').addEventListener('click', () => {
+            gameState.combo++;
+            const damage = (10 + gameState.combo * 2) * gameState.damageMultiplier;
+            gameState.score += Math.floor(damage);
+            updateUI();
+            showDamage(damage);
+        });
+
+        // Auto attack
+        function autoAttack() {
+            if (gameState.autoAttackActive) {
+                document.getElementById('attackBtn').click();
+                setTimeout(autoAttack, gameState.baseAttackSpeed);
+            }
+        }
+
+        // Buy upgrades
+        function buyUpgrade(upgradeId) {
+            const costs = { 1: 100, 2: 250, 3: 500 };
+            const cost = costs[upgradeId];
+
+            if (gameState.score >= cost) {
+                gameState.score -= cost;
+                if (upgradeId === 1) {
+                    gameState.baseAttackSpeed = Math.max(300, gameState.baseAttackSpeed - 100);
+                    alert('Speed Boost activated!');
+                } else if (upgradeId === 2) {
+                    gameState.damageMultiplier += 0.5;
+                    alert('Damage Multiplier increased!');
+                } else if (upgradeId === 3) {
+                    gameState.autoAttackActive = true;
+                    autoAttack();
+                    alert('Auto Attack activated!');
+                }
+                updateUI();
+            } else {
+                alert('Not enough points!');
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('combo').textContent = 'Combo: ' + gameState.combo;
+
+            // Level up every 1000 points
+            const newLevel = Math.floor(gameState.score / 1000) + 1;
+            if (newLevel > gameState.level) {
+                gameState.level = newLevel;
+                alert('🎉 Level Up! You are now level ' + gameState.level);
+            }
+        }
+
+        // Show damage numbers
+        function showDamage(damage) {
+            const damageEl = document.createElement('div');
+            damageEl.textContent = '+' + Math.floor(damage);
+            damageEl.className = 'damage-number';
+            document.querySelector('.player-character').appendChild(damageEl);
+            setTimeout(() => damageEl.remove(), 1000);
+        }
+
+        // Timer
+        setInterval(() => {
+            const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+            document.getElementById('timer').textContent = elapsed + 's';
+        }, 1000);
+
+        // Save on page unload
+        window.addEventListener('beforeunload', async () => {
+            if (gameState.sessionId) {
+                const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+                await fetch('{% url "end_session" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        session_id: gameState.sessionId,
+                        final_score: gameState.score,
+                        duration: elapsed
+                    })
+                });
+            }
+        });
+
+        // Initialize
+        startGame();
+    </script>
+</body>
+</html>

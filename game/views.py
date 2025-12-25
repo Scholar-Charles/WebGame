@@ -2,8 +2,12 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods
-from .models import Player
+from django.views.decorators.http import require_http_methods, require_POST
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Player, GameSession, PlayerProgression
+import json
+from datetime import datetime
 
 @require_http_methods(["GET", "POST"])
 def landing(request):
@@ -26,7 +30,8 @@ def register(request):
             return render(request, 'register.html', {'error': 'Username already exists'})
 
         user = User.objects.create_user(username=username, email=email, password=password)
-        Player.objects.create(user=user)
+        player = Player.objects.create(user=user)
+        PlayerProgression.objects.create(player=player)
         login(request, user)
         return redirect('dashboard')
 
@@ -51,6 +56,60 @@ def login_view(request):
 def dashboard(request):
     player = Player.objects.get(user=request.user)
     return render(request, 'dashboard.html', {'player': player})
+
+@login_required
+def game(request):
+    player = Player.objects.get(user=request.user)
+    progression, created = PlayerProgression.objects.get_or_create(player=player)
+    return render(request, 'game.html', {'player': player, 'progression': progression})
+
+@login_required
+@require_POST
+def start_session(request):
+    player = Player.objects.get(user=request.user)
+    session = GameSession.objects.create(player=player, status='active')
+    return JsonResponse({'session_id': str(session.session_id), 'success': True})
+
+@login_required
+@require_POST
+def update_score(request):
+    try:
+        data = json.loads(request.body)
+        score_increment = data.get('score', 0)
+        
+        player = Player.objects.get(user=request.user)
+        player.high_score += score_increment
+        player.save()
+        
+        return JsonResponse({'success': True, 'high_score': player.high_score})
+    except:
+        return JsonResponse({'success': False}, status=400)
+
+@login_required
+@require_POST
+def end_session(request):
+    try:
+        data = json.loads(request.body)
+        session_id = data.get('session_id')
+        final_score = data.get('final_score', 0)
+        duration = data.get('duration', 0)
+        
+        player = Player.objects.get(user=request.user)
+        session = GameSession.objects.get(session_id=session_id, player=player)
+        
+        session.final_score = final_score
+        session.duration = duration
+        session.status = 'completed'
+        session.end_time = datetime.now()
+        session.save()
+        
+        player.games_played += 1
+        player.total_playtime += duration
+        player.save()
+        
+        return JsonResponse({'success': True})
+    except:
+        return JsonResponse({'success': False}, status=400)
 
 @login_required
 def logout_view(request):
