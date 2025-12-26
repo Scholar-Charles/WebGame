@@ -88,7 +88,6 @@ class GameSession(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
     final_score = models.BigIntegerField(default=0)
     level_reached = models.IntegerField(default=1)
-    duration_seconds = models.BigIntegerField(null=True, blank=True)
 
     class Meta:
         db_table = 'game_sessions'

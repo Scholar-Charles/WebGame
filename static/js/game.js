@@ -17,13 +17,37 @@ class TowerDefenseGame {
         this.projectiles = [];
         this.selectedTower = null;
         
+        // Add tower cooldowns tracking
+        this.towerCooldowns = {};
+        
+        this.waves = [];
+        this.waveEnemySpawnQueue = [];
+        this.waveStartTime = null;
+        this.towerImages = {};
+        this.enemyImages = {};
+        this.allTowersData = [];
+        
+        // Define the enemy path
+        this.path = [
+            { x: 50, y: 75 },
+            { x: 150, y: 75 },
+            { x: 150, y: 150 },
+            { x: 300, y: 150 },
+            { x: 300, y: 300 },
+            { x: 550, y: 300 }
+        ];
+        
         this.init();
     }
 
     init() {
-        document.getElementById('startGameBtn').addEventListener('click', () => this.startGame());
-        document.getElementById('pauseGameBtn').addEventListener('click', () => this.togglePause());
-        document.getElementById('endGameBtn').addEventListener('click', () => this.endGame());
+        const startBtn = document.getElementById('startGameBtn');
+        const pauseBtn = document.getElementById('pauseGameBtn');
+        const endBtn = document.getElementById('endGameBtn');
+        
+        if (startBtn) startBtn.addEventListener('click', () => this.startGame());
+        if (pauseBtn) pauseBtn.addEventListener('click', () => this.togglePause());
+        if (endBtn) endBtn.addEventListener('click', () => this.endGame());
         
         document.querySelectorAll('.btn-select-tower').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -32,31 +56,180 @@ class TowerDefenseGame {
             });
         });
 
-        this.canvas.addEventListener('click', (e) => this.placeOnCanvas(e));
+        if (this.canvas) {
+            this.canvas.addEventListener('click', (e) => this.placeOnCanvas(e));
+        }
+        
+        // Load waves and tower images on init
+        this.loadWavesAndEnemies();
+        this.loadTowerImages();
+        this.drawInitialMap();
+    }
+
+    drawInitialMap() {
+        // Draw the initial map with the path
+        this.ctx.fillStyle = '#1a1a1a';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        this.ctx.strokeStyle = '#667eea';
+        this.ctx.lineWidth = 40;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.path[0].x, this.path[0].y);
+        for (let i = 1; i < this.path.length; i++) {
+            this.ctx.lineTo(this.path[i].x, this.path[i].y);
+        }
+        this.ctx.stroke();
+        
+        // Draw path outline
+        this.ctx.strokeStyle = '#888';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([5, 5]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.path[0].x, this.path[0].y);
+        for (let i = 1; i < this.path.length; i++) {
+            this.ctx.lineTo(this.path[i].x, this.path[i].y);
+        }
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+        
+        // Draw start and end markers
+        this.ctx.fillStyle = '#4caf50';
+        this.ctx.beginPath();
+        this.ctx.arc(this.path[0].x, this.path[0].y, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = '#f44336';
+        this.ctx.beginPath();
+        this.ctx.arc(this.path[this.path.length - 1].x, this.path[this.path.length - 1].y, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+    }
+
+    loadWavesAndEnemies() {
+        fetch('/game/api/waves/')
+            .then(res => res.json())
+            .then(data => {
+                this.waves = data.waves;
+                console.log('Waves loaded:', this.waves);
+                this.displayWaveInfo();
+            })
+            .catch(err => console.error('Error loading waves:', err));
+    }
+
+    loadTowerImages() {
+        fetch('/game/api/towers/')
+            .then(res => res.json())
+            .then(data => {
+                this.allTowersData = data.towers;
+                data.towers.forEach(tower => {
+                    if (tower.image_path) {
+                        const img = new Image();
+                        // Ensure path starts with /static/ or /media/
+                        img.src = tower.image_path.startsWith('/') 
+                            ? tower.image_path 
+                            : `/static/${tower.image_path}`;
+                        this.towerImages[tower.tower_id] = img;
+                    }
+                });
+                console.log('Tower images loaded');
+            })
+            .catch(err => console.error('Error loading tower images:', err));
+    }
+
+    displayWaveInfo() {
+        const waveDisplay = document.getElementById('waveDisplay');
+        if (!waveDisplay || this.waves.length === 0) return;
+        
+        const currentWave = this.waves[this.currentWave - 1];
+        if (currentWave) {
+            let waveHtml = `<p><strong>Wave ${currentWave.wave_number}</strong></p>`;
+            currentWave.enemies.forEach(we => {
+                waveHtml += `<div class="wave-enemy-info">
+                    <p>${we.enemy_name} ×${we.enemy_count}</p>
+                    <p style="font-size: 9px; color: #aaa;">HP: ${we.base_hp}</p>
+                </div>`;
+            });
+            waveDisplay.innerHTML = waveHtml;
+        }
     }
 
     startGame() {
         if (this.isRunning) return;
 
-        fetch('{% url "start_game" %}', { method: 'POST' })
+        fetch('/game/api/start/', { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
             .then(res => res.json())
             .then(data => {
-                this.sessionId = data.session_id;
-                this.isRunning = true;
-                this.isPaused = false;
-                this.gameStartTime = Date.now();
+                if (data.success) {
+                    this.sessionId = data.session_id;
+                    this.isRunning = true;
+                    this.isPaused = false;
+                    this.gameStartTime = Date.now();
+                    this.waveStartTime = Date.now();
 
-                document.getElementById('startGameBtn').disabled = true;
-                document.getElementById('pauseGameBtn').disabled = false;
-                document.getElementById('endGameBtn').disabled = false;
+                    if (this.waves.length > 0) {
+                        this.setupWaveSpawning();
+                    }
 
-                this.gameLoop();
+                    const startBtn = document.getElementById('startGameBtn');
+                    const pauseBtn = document.getElementById('pauseGameBtn');
+                    const endBtn = document.getElementById('endGameBtn');
+                    
+                    if (startBtn) startBtn.disabled = true;
+                    if (pauseBtn) pauseBtn.disabled = false;
+                    if (endBtn) endBtn.disabled = false;
+
+                    console.log('Game started, session:', this.sessionId);
+                    this.gameLoop();
+                } else {
+                    alert('Error starting game: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Failed to start game');
             });
+    }
+
+    setupWaveSpawning() {
+        const wave = this.waves[this.currentWave - 1];
+        if (!wave) {
+            console.error('Wave not found:', this.currentWave);
+            return;
+        }
+
+        this.waveEnemySpawnQueue = [];
+        wave.enemies.forEach(we => {
+            for (let i = 0; i < we.enemy_count; i++) {
+                this.waveEnemySpawnQueue.push({
+                    enemy_id: we.enemy_id,
+                    enemy_name: we.enemy_name,
+                    base_hp: we.base_hp,
+                    base_def: we.base_def,
+                    speed: we.speed,
+                    reward_gold: we.reward_gold,
+                    score_reward: we.score_reward,
+                    image_path: we.image_path,
+                    spawnTime: i * we.spawn_interval
+                });
+            }
+        });
+        this.waveEnemySpawnQueue.sort((a, b) => a.spawnTime - b.spawnTime);
+        console.log('Wave spawning setup - Queue length:', this.waveEnemySpawnQueue.length);
+        console.log('First enemy spawn time:', this.waveEnemySpawnQueue[0]?.spawnTime);
     }
 
     togglePause() {
         this.isPaused = !this.isPaused;
-        document.getElementById('pauseGameBtn').textContent = this.isPaused ? 'Resume' : 'Pause';
+        const pauseBtn = document.getElementById('pauseGameBtn');
+        if (pauseBtn) {
+            pauseBtn.textContent = this.isPaused ? 'Resume' : 'Pause';
+        }
     }
 
     selectTower(towerId) {
@@ -64,6 +237,12 @@ class TowerDefenseGame {
         document.querySelectorAll('.tower-card').forEach(card => {
             card.style.borderColor = card.dataset.towerId === towerId ? '#667eea' : '#444';
         });
+        console.log('Selected tower:', towerId);
+    }
+
+    getTowerCost(towerId) {
+        const tower = this.allTowersData.find(t => t.tower_id == towerId);
+        return tower ? tower.cost : 0;
     }
 
     placeOnCanvas(e) {
@@ -73,11 +252,26 @@ class TowerDefenseGame {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        const towerCost = 100; // Simplified
-        if (this.playerGold >= towerCost) {
-            this.towers.push({ x, y, radius: 20 });
-            this.playerGold -= towerCost;
+        // Get tower data
+        const tower = this.allTowersData.find(t => t.tower_id == this.selectedTower);
+        if (!tower) {
+            console.error('Tower not found:', this.selectedTower);
+            return;
+        }
+
+        if (this.playerGold >= tower.cost) {
+            this.towers.push({ 
+                x, y, 
+                radius: 15,
+                tower_id: this.selectedTower,
+                range: tower.range,
+                base_damage: tower.base_damage
+            });
+            this.playerGold -= tower.cost;
             this.updateUI();
+            console.log('Tower placed at:', x, y);
+        } else {
+            alert('Not enough gold! Need ' + tower.cost + ', have ' + this.playerGold);
         }
     }
 
@@ -93,86 +287,204 @@ class TowerDefenseGame {
     }
 
     update() {
-        // Spawn enemies
-        if (Math.random() < 0.02) {
-            this.enemies.push({ x: -20, y: 50 + Math.random() * 500, radius: 10 });
+        // Spawn enemies based on wave schedule
+        const elapsedTime = (Date.now() - this.waveStartTime) / 1000;
+        
+        while (this.waveEnemySpawnQueue.length > 0 && 
+               this.waveEnemySpawnQueue[0].spawnTime <= elapsedTime) {
+            const we = this.waveEnemySpawnQueue.shift();
+            this.enemies.push({
+                x: this.path[0].x,
+                y: this.path[0].y,
+                radius: 8,
+                pathProgress: 0,
+                hp: we.base_hp,
+                maxHp: we.base_hp,
+                speed: we.speed,
+                enemy_id: we.enemy_id,
+                enemy_name: we.enemy_name,
+                reward_gold: we.reward_gold,
+                score_reward: we.score_reward,
+                image_path: we.image_path
+            });
+            console.log('Enemy spawned:', we.enemy_name);
         }
 
-        // Move enemies
-        this.enemies.forEach((enemy, idx) => {
-            enemy.x += 2;
-            if (enemy.x > this.canvas.width) {
-                this.enemies.splice(idx, 1);
+        // Move enemies along path
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+            const enemy = this.enemies[i];
+            enemy.pathProgress += 0.3 * (enemy.speed || 1);
+            
+            if (enemy.pathProgress >= this.getPathLength()) {
+                this.enemies.splice(i, 1);
                 this.playerLives--;
                 if (this.playerLives <= 0) this.endGame();
+            } else {
+                const pos = this.getPositionOnPath(enemy.pathProgress);
+                enemy.x = pos.x;
+                enemy.y = pos.y;
             }
-        });
+        }
 
-        // Tower shooting
-        this.towers.forEach(tower => {
-            this.enemies.forEach((enemy, idx) => {
-                const dist = Math.hypot(tower.x - enemy.x, tower.y - enemy.y);
-                if (dist < 100) {
-                    this.projectiles.push({ x: tower.x, y: tower.y, tx: enemy.x, ty: enemy.y });
-                    this.score += enemy.score_reward;  // Use enemy's score value
-                    this.playerGold += enemy.reward_gold;  // Already doing this
-                    this.enemies.splice(idx, 1);
+        // Tower shooting with cooldown
+        const currentTime = Date.now();
+        this.towers.forEach((tower, tIdx) => {
+            // Initialize cooldown if not exists
+            if (!this.towerCooldowns[tIdx]) {
+                this.towerCooldowns[tIdx] = 0;
+            }
+
+            // Get tower data for attack speed
+            const towerData = this.allTowersData.find(t => t.tower_id == tower.tower_id);
+            const attackCooldown = towerData ? 1000 / towerData.attack_speed : 1000; // Convert to milliseconds
+            
+            // Check if tower can attack
+            if (currentTime - this.towerCooldowns[tIdx] >= attackCooldown) {
+                let enemyInRange = null;
+                
+                // Find closest enemy in range
+                for (let i = 0; i < this.enemies.length; i++) {
+                    const enemy = this.enemies[i];
+                    const dist = Math.hypot(tower.x - enemy.x, tower.y - enemy.y);
+                    if (dist < tower.range) {
+                        enemyInRange = { enemy, index: i, distance: dist };
+                        break; // Attack first enemy in range
+                    }
                 }
-            });
+                
+                // Attack the enemy if found
+                if (enemyInRange) {
+                    enemyInRange.enemy.hp -= (tower.base_damage || 10);
+                    console.log(`Tower attacked ${enemyInRange.enemy.enemy_name}, HP: ${enemyInRange.enemy.hp}`);
+                    this.towerCooldowns[tIdx] = currentTime;
+                    
+                    // Remove enemy if dead
+                    if (enemyInRange.enemy.hp <= 0) {
+                        this.score += enemyInRange.enemy.score_reward;
+                        this.playerGold += enemyInRange.enemy.reward_gold;
+                        this.enemies.splice(enemyInRange.index, 1);
+                        console.log(`Enemy killed! Gold: +${enemyInRange.enemy.reward_gold}, Score: +${enemyInRange.enemy.score_reward}`);
+                    }
+                }
+            }
         });
 
         this.updateUI();
     }
 
+    getPathLength() {
+        let length = 0;
+        for (let i = 0; i < this.path.length - 1; i++) {
+            const dx = this.path[i + 1].x - this.path[i].x;
+            const dy = this.path[i + 1].y - this.path[i].y;
+            length += Math.hypot(dx, dy);
+        }
+        return length;
+    }
+
+    getPositionOnPath(distance) {
+        let currentDist = 0;
+        for (let i = 0; i < this.path.length - 1; i++) {
+            const dx = this.path[i + 1].x - this.path[i].x;
+            const dy = this.path[i + 1].y - this.path[i].y;
+            const segmentLength = Math.hypot(dx, dy);
+            
+            if (currentDist + segmentLength >= distance) {
+                const ratio = (distance - currentDist) / segmentLength;
+                return {
+                    x: this.path[i].x + dx * ratio,
+                    y: this.path[i].y + dy * ratio
+                };
+            }
+            currentDist += segmentLength;
+        }
+        return this.path[this.path.length - 1];
+    }
+
     draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = '#1a1a1a';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw path
+        this.ctx.strokeStyle = '#667eea';
+        this.ctx.lineWidth = 40;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.path[0].x, this.path[0].y);
+        for (let i = 1; i < this.path.length; i++) {
+            this.ctx.lineTo(this.path[i].x, this.path[i].y);
+        }
+        this.ctx.stroke();
 
         // Draw towers
-        this.ctx.fillStyle = '#667eea';
         this.towers.forEach(tower => {
+            this.ctx.fillStyle = '#667eea';
             this.ctx.beginPath();
             this.ctx.arc(tower.x, tower.y, tower.radius, 0, Math.PI * 2);
             this.ctx.fill();
+            
+            // Draw range indicator
+            this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.2)';
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
+            this.ctx.stroke();
         });
 
         // Draw enemies
-        this.ctx.fillStyle = '#ff6b6b';
         this.enemies.forEach(enemy => {
+            this.ctx.fillStyle = '#ff6b6b';
             this.ctx.beginPath();
             this.ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
             this.ctx.fill();
-        });
-
-        // Draw projectiles
-        this.ctx.fillStyle = '#ffd700';
-        this.projectiles.forEach((proj, idx) => {
-            this.ctx.beginPath();
-            this.ctx.arc(proj.x, proj.y, 3, 0, Math.PI * 2);
-            this.ctx.fill();
+            
+            // Draw health bar
+            this.ctx.fillStyle = '#ff0000';
+            this.ctx.fillRect(enemy.x - 10, enemy.y - 15, 20, 3);
+            this.ctx.fillStyle = '#00ff00';
+            this.ctx.fillRect(enemy.x - 10, enemy.y - 15, (enemy.hp / enemy.maxHp) * 20, 3);
         });
     }
 
     updateUI() {
-        document.getElementById('playerGold').textContent = this.playerGold;
-        document.getElementById('playerLives').textContent = this.playerLives;
-        document.getElementById('currentWave').textContent = this.currentWave;
-        document.getElementById('scoreDisplay').textContent = `Score: ${this.score}`;
+        const goldEl = document.getElementById('playerGold');
+        const livesEl = document.getElementById('playerLives');
+        const waveEl = document.getElementById('currentWave');
+        const scoreEl = document.getElementById('scoreDisplay');
+        
+        if (goldEl) goldEl.textContent = this.playerGold;
+        if (livesEl) livesEl.textContent = this.playerLives;
+        if (waveEl) waveEl.textContent = this.currentWave;
+        if (scoreEl) scoreEl.textContent = `Score: ${this.score}`;
     }
 
     endGame() {
         this.isRunning = false;
-        document.getElementById('startGameBtn').disabled = false;
-        document.getElementById('pauseGameBtn').disabled = true;
-        document.getElementById('endGameBtn').disabled = true;
+        
+        const startBtn = document.getElementById('startGameBtn');
+        const pauseBtn = document.getElementById('pauseGameBtn');
+        const endBtn = document.getElementById('endGameBtn');
+        
+        if (startBtn) startBtn.disabled = false;
+        if (pauseBtn) pauseBtn.disabled = true;
+        if (endBtn) endBtn.disabled = true;
 
         const formData = new FormData();
         formData.append('session_id', this.sessionId);
         formData.append('final_score', this.score);
         formData.append('level_reached', this.currentWave);
 
-        fetch('{% url "end_game" %}', { method: 'POST', body: formData })
+        fetch('/game/api/end/', { method: 'POST', body: formData })
             .then(res => res.json())
-            .then(data => alert(`Game Over! Final Score: ${this.score}`));
+            .then(data => {
+                if (data.success) {
+                    alert(`Game Over! Final Score: ${this.score}`);
+                } else {
+                    alert('Error ending game');
+                }
+            })
+            .catch(err => console.error('Error:', err));
     }
 }
 

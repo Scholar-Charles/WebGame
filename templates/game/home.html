@@ -46,9 +46,18 @@
                 <div class="waves-panel">
                     <h3>Wave Info</h3>
                     <div id="waveDisplay">
-                        <p>Current Wave: <span id="currentWave">1</span></p>
-                        <p>Gold: <span id="playerGold">500</span> 💰</p>
-                        <p>Lives: <span id="playerLives">20</span> ❤️</p>
+                        <div class="stat-item">
+                            <span class="stat-label">Current Wave:</span>
+                            <span class="stat-value" id="currentWave">1</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Gold:</span>
+                            <span class="stat-value" id="playerGold">500</span> 💰
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Lives:</span>
+                            <span class="stat-value" id="playerLives">20</span> ❤️
+                        </div>
                     </div>
                 </div>
 
@@ -60,7 +69,7 @@
             </aside>
 
             <main class="game-canvas">
-                <canvas id="gameCanvas" width="800" height="600"></canvas>
+                <canvas id="gameCanvas" width="600" height="450"></canvas>
             </main>
         </div>
 
@@ -70,6 +79,7 @@
         </footer>
     </div>
 
+    <!-- Only load our game script, no external analytics -->
     <script src="{% static 'js/game.js' %}"></script>
 </body>
 </html>
