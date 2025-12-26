@@ -26,6 +26,7 @@ body {
     padding: 40px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     animation: slideIn 0.5s ease-out;
+    max-width: 400px;
 }
 
 @keyframes slideIn {
@@ -40,10 +41,16 @@ body {
 }
 
 .auth-box h1 {
-    text-align: center;
-    color: #667eea;
-    margin-bottom: 10px;
-    font-size: 28px;
+    display: none;
+}
+
+.auth-logo {
+    width: 100%;
+    height: 80px;
+    max-width: 250px;
+    object-fit: contain;
+    margin: 0 auto 20px;
+    display: block;
 }
 
 .auth-box h2 {

@@ -11,7 +11,7 @@
 <body>
     <div class="leaderboard-container">
         <header>
-            <h1>🏆 Tower Defense Leaderboard</h1>
+            <img src="{% static 'img/GameTitle.png' %}" alt="Tower Defense" class="leaderboard-logo">
             <a href="{% url 'game_home' %}" class="btn-back">Back to Game</a>
         </header>
 
@@ -68,8 +68,13 @@
         }
 
         header h1 {
-            color: #667eea;
-            font-size: 28px;
+            display: none;
+        }
+
+        .leaderboard-logo {
+            height: 60px;
+            max-width: 200px;
+            object-fit: contain;
         }
 
         .btn-back {
