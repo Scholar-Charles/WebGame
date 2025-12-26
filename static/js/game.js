@@ -172,6 +172,12 @@ class TowerDefenseGame {
                     this.gameStartTime = Date.now();
                     this.waveStartTime = Date.now();
 
+                    // Hide idle overlay
+                    const overlay = document.getElementById('gameIdleOverlay');
+                    if (overlay) {
+                        overlay.classList.add('hidden');
+                    }
+
                     if (this.waves.length > 0) {
                         this.setupWaveSpawning();
                     }
@@ -305,9 +311,10 @@ class TowerDefenseGame {
                 enemy_name: we.enemy_name,
                 reward_gold: we.reward_gold,
                 score_reward: we.score_reward,
-                image_path: we.image_path
+                image_path: we.image_path,
+                alive: true
             });
-            console.log('Enemy spawned:', we.enemy_name);
+            console.log('Enemy spawned:', we.enemy_name, 'HP:', we.base_hp);
         }
 
         // Move enemies along path
@@ -316,8 +323,10 @@ class TowerDefenseGame {
             enemy.pathProgress += 0.3 * (enemy.speed || 1);
             
             if (enemy.pathProgress >= this.getPathLength()) {
+                enemy.alive = false;
                 this.enemies.splice(i, 1);
                 this.playerLives--;
+                console.log('Enemy escaped! Lives remaining:', this.playerLives);
                 if (this.playerLives <= 0) this.endGame();
             } else {
                 const pos = this.getPositionOnPath(enemy.pathProgress);
@@ -336,38 +345,78 @@ class TowerDefenseGame {
 
             // Get tower data for attack speed
             const towerData = this.allTowersData.find(t => t.tower_id == tower.tower_id);
-            const attackCooldown = towerData ? 1000 / towerData.attack_speed : 1000; // Convert to milliseconds
+            if (!towerData) {
+                console.warn('Tower data not found for tower_id:', tower.tower_id);
+                return;
+            }
+            
+            const attackCooldown = 1000 / towerData.attack_speed;
+            const timeSinceLastAttack = currentTime - this.towerCooldowns[tIdx];
             
             // Check if tower can attack
-            if (currentTime - this.towerCooldowns[tIdx] >= attackCooldown) {
+            if (timeSinceLastAttack >= attackCooldown) {
                 let enemyInRange = null;
+                let closestDistance = Infinity;
                 
                 // Find closest enemy in range
                 for (let i = 0; i < this.enemies.length; i++) {
                     const enemy = this.enemies[i];
+                    if (!enemy.alive) continue;
                     const dist = Math.hypot(tower.x - enemy.x, tower.y - enemy.y);
-                    if (dist < tower.range) {
+                    if (dist < tower.range && dist < closestDistance) {
                         enemyInRange = { enemy, index: i, distance: dist };
-                        break; // Attack first enemy in range
+                        closestDistance = dist;
                     }
                 }
                 
                 // Attack the enemy if found
                 if (enemyInRange) {
-                    enemyInRange.enemy.hp -= (tower.base_damage || 10);
-                    console.log(`Tower attacked ${enemyInRange.enemy.enemy_name}, HP: ${enemyInRange.enemy.hp}`);
-                    this.towerCooldowns[tIdx] = currentTime;
+                    const damageDealt = towerData.base_damage || 10;
                     
-                    // Remove enemy if dead
-                    if (enemyInRange.enemy.hp <= 0) {
-                        this.score += enemyInRange.enemy.score_reward;
-                        this.playerGold += enemyInRange.enemy.reward_gold;
-                        this.enemies.splice(enemyInRange.index, 1);
-                        console.log(`Enemy killed! Gold: +${enemyInRange.enemy.reward_gold}, Score: +${enemyInRange.enemy.score_reward}`);
-                    }
+                    // Create laser projectile - store reference to enemy object directly
+                    this.projectiles.push({
+                        x: tower.x,
+                        y: tower.y,
+                        targetEnemy: enemyInRange.enemy,
+                        damage: damageDealt,
+                        age: 0,
+                        maxAge: 150 // milliseconds
+                    });
+                    
+                    console.log(`🎯 Tower at (${tower.x}, ${tower.y}) shooting at ${enemyInRange.enemy.enemy_name}`);
+                    this.towerCooldowns[tIdx] = currentTime;
                 }
             }
         });
+
+        // Update projectiles
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const proj = this.projectiles[i];
+            proj.age += 16; // Approximate frame time
+            
+            if (proj.age >= proj.maxAge) {
+                // Projectile hit - deal damage to target enemy
+                if (proj.targetEnemy && proj.targetEnemy.alive) {
+                    proj.targetEnemy.hp -= proj.damage;
+                    console.log(`💥 Hit! ${proj.targetEnemy.enemy_name} takes ${proj.damage} damage. Remaining HP: ${proj.targetEnemy.hp}`);
+                    
+                    if (proj.targetEnemy.hp <= 0) {
+                        proj.targetEnemy.alive = false;
+                        this.score += proj.targetEnemy.score_reward;
+                        this.playerGold += proj.targetEnemy.reward_gold;
+                        
+                        // Remove dead enemy from array
+                        const deadIdx = this.enemies.indexOf(proj.targetEnemy);
+                        if (deadIdx > -1) {
+                            this.enemies.splice(deadIdx, 1);
+                        }
+                        console.log(`💀 Enemy killed! Gold: +${proj.targetEnemy.reward_gold}, Score: +${proj.targetEnemy.score_reward}`);
+                    }
+                }
+                
+                this.projectiles.splice(i, 1);
+            }
+        }
 
         this.updateUI();
     }
@@ -419,10 +468,17 @@ class TowerDefenseGame {
 
         // Draw towers
         this.towers.forEach(tower => {
-            this.ctx.fillStyle = '#667eea';
-            this.ctx.beginPath();
-            this.ctx.arc(tower.x, tower.y, tower.radius, 0, Math.PI * 2);
-            this.ctx.fill();
+            // Try to draw tower image first
+            const towerImg = this.towerImages[tower.tower_id];
+            if (towerImg && towerImg.complete) {
+                this.ctx.drawImage(towerImg, tower.x - 20, tower.y - 20, 40, 40);
+            } else {
+                // Fallback to circle if image not loaded
+                this.ctx.fillStyle = '#667eea';
+                this.ctx.beginPath();
+                this.ctx.arc(tower.x, tower.y, tower.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
             
             // Draw range indicator
             this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.2)';
@@ -430,6 +486,29 @@ class TowerDefenseGame {
             this.ctx.beginPath();
             this.ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
             this.ctx.stroke();
+        });
+
+        // Draw projectiles (laser beams)
+        this.projectiles.forEach(proj => {
+            const progress = proj.age / proj.maxAge;
+            
+            // Get current target position
+            const targetX = proj.targetEnemy ? proj.targetEnemy.x : proj.x;
+            const targetY = proj.targetEnemy ? proj.targetEnemy.y : proj.y;
+            
+            // Draw laser line from tower to target
+            this.ctx.strokeStyle = `rgba(255, 200, 0, ${1 - progress})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(proj.x, proj.y);
+            this.ctx.lineTo(targetX, targetY);
+            this.ctx.stroke();
+            
+            // Draw impact glow at target
+            this.ctx.fillStyle = `rgba(255, 150, 0, ${0.6 * (1 - progress)})`;
+            this.ctx.beginPath();
+            this.ctx.arc(targetX, targetY, 5 + progress * 10, 0, Math.PI * 2);
+            this.ctx.fill();
         });
 
         // Draw enemies

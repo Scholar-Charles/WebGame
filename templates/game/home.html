@@ -70,6 +70,14 @@
             </aside>
 
             <main class="game-canvas">
+                <div id="gameIdleOverlay" class="game-idle-overlay">
+                    <div class="game-title-float">
+                        <img src="{% static 'img/GameTitle.png' %}" alt="Tower Defense">
+                    </div>
+                    <div class="start-game-prompt">
+                        ▶ CLICK START GAME ◀
+                    </div>
+                </div>
                 <canvas id="gameCanvas" width="600" height="450"></canvas>
             </main>
         </div>
