@@ -169,10 +169,17 @@ body {
     font-size: 18px;
 }
 
-#waveDisplay {
+.waves-panel h4 {
+    color: #aaa;
+    margin: 15px 0 10px 0;
+    font-size: 14px;
+}
+
+.stats-display {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-bottom: 15px;
 }
 
 .stat-item {
@@ -198,11 +205,33 @@ body {
 }
 
 .stat-item:nth-child(2) .stat-value {
-    color: #ffd700; /* Gold color for gold amount */
+    color: #ffd700;
 }
 
 .stat-item:nth-child(3) .stat-value {
-    color: #ff6b6b; /* Red color for lives */
+    color: #ff6b6b;
+}
+
+.wave-enemies-display {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.wave-enemy-info {
+    background: rgba(102, 126, 234, 0.2);
+    padding: 8px;
+    margin-bottom: 8px;
+    border-radius: 3px;
+    border-left: 2px solid #ff6b6b;
+}
+
+.wave-enemy-info p {
+    margin: 4px 0;
+    color: #ddd;
+    font-size: 13px;
 }
 
 .game-controls {

@@ -143,7 +143,7 @@ class TowerDefenseGame {
         
         const currentWave = this.waves[this.currentWave - 1];
         if (currentWave) {
-            let waveHtml = `<p><strong>Wave ${currentWave.wave_number}</strong></p>`;
+            let waveHtml = `<h4>Enemies in Wave:</h4>`;
             currentWave.enemies.forEach(we => {
                 waveHtml += `<div class="wave-enemy-info">
                     <p>${we.enemy_name} ×${we.enemy_count}</p>
