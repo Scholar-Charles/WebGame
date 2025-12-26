@@ -90,7 +90,8 @@ CREATE TABLE towers (
     base_damage INT NOT NULL,
     attack_speed FLOAT NOT NULL,
     range FLOAT NOT NULL,
-    cost INT NOT NULL
+    cost INT NOT NULL,
+    image_path VARCHAR(100),  
 );
 
 
@@ -101,7 +102,8 @@ CREATE TABLE tower_upgrades (
     damage_bonus INT DEFAULT 0,
     speed_bonus FLOAT DEFAULT 0,
     range_bonus FLOAT DEFAULT 0,
-    cost INT NOT NULL
+    cost INT NOT NULL,
+    image_path VARCHAR(100),  
 );
 
 
@@ -112,18 +114,25 @@ CREATE TABLE enemies (
     base_def INT NOT NULL,
     speed FLOAT NOT NULL,
     reward_gold INT NOT NULL,
-    image_path VARCHAR(100)  
+    image_path VARCHAR(100),  
 );
 
 
+-- Remove enemy_id from waves table
 CREATE TABLE waves (
     wave_id SERIAL PRIMARY KEY,
-    wave_number INT NOT NULL,
-    enemy_id INT REFERENCES enemies(enemy_id),
+    wave_number INT NOT NULL
+    -- other fields as needed
+);
+
+-- New table to link waves and enemies
+CREATE TABLE wave_enemies (
+    wave_enemy_id SERIAL PRIMARY KEY,
+    wave_id INT REFERENCES waves(wave_id) ON DELETE CASCADE,
+    enemy_id INT REFERENCES enemies(enemy_id) ON DELETE CASCADE,
     enemy_count INT NOT NULL,
     spawn_interval FLOAT NOT NULL
 );
-
 
 CREATE TABLE session_stats (
     stat_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

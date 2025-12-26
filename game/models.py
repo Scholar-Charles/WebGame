@@ -8,6 +8,7 @@ class Tower(models.Model):
     attack_speed = models.FloatField()
     range = models.FloatField()
     cost = models.IntegerField()
+    image_path = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         db_table = 'towers'
@@ -25,6 +26,7 @@ class TowerUpgrade(models.Model):
     speed_bonus = models.FloatField(default=0)
     range_bonus = models.FloatField(default=0)
     cost = models.IntegerField()
+    image_path = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         db_table = 'tower_upgrades'
@@ -38,8 +40,10 @@ class Enemy(models.Model):
     enemy_id = models.AutoField(primary_key=True)
     enemy_name = models.CharField(max_length=50)
     base_hp = models.IntegerField()
+    base_def = models.IntegerField()
     speed = models.FloatField()
     reward_gold = models.IntegerField()
+    image_path = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         db_table = 'enemies'
@@ -52,9 +56,6 @@ class Enemy(models.Model):
 class Wave(models.Model):
     wave_id = models.AutoField(primary_key=True)
     wave_number = models.IntegerField()
-    enemy = models.ForeignKey(Enemy, on_delete=models.CASCADE)
-    enemy_count = models.IntegerField()
-    spawn_interval = models.FloatField()
 
     class Meta:
         db_table = 'waves'
@@ -62,6 +63,21 @@ class Wave(models.Model):
 
     def __str__(self):
         return f"Wave {self.wave_number}"
+
+
+class WaveEnemy(models.Model):
+    wave_enemy_id = models.AutoField(primary_key=True)
+    wave = models.ForeignKey(Wave, on_delete=models.CASCADE)
+    enemy = models.ForeignKey(Enemy, on_delete=models.CASCADE)
+    enemy_count = models.IntegerField()
+    spawn_interval = models.FloatField()
+
+    class Meta:
+        db_table = 'wave_enemies'
+        managed = False
+
+    def __str__(self):
+        return f"Wave {self.wave.wave_number} - {self.enemy.enemy_name}"
 
 
 class GameSession(models.Model):
@@ -129,8 +145,8 @@ class Achievement(models.Model):
 
 class AdClick(models.Model):
     click_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    player = models.ForeignKey('authentication.Player', on_delete=models.SET_NULL, null=True)
-    session = models.ForeignKey(GameSession, on_delete=models.SET_NULL, null=True)
+    player = models.ForeignKey('authentication.Player', on_delete=models.SET_NULL, null=True, blank=True)
+    session = models.ForeignKey(GameSession, on_delete=models.SET_NULL, null=True, blank=True)
     ad_identifier = models.CharField(max_length=100)
     clicked_at = models.DateTimeField(auto_now_add=True)
     target_url = models.TextField()
