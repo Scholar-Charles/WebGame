@@ -43,6 +43,7 @@ class Enemy(models.Model):
     base_def = models.IntegerField()
     speed = models.FloatField()
     reward_gold = models.IntegerField()
+    score_reward = models.IntegerField()
     image_path = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:

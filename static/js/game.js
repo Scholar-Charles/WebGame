@@ -114,9 +114,9 @@ class TowerDefenseGame {
                 const dist = Math.hypot(tower.x - enemy.x, tower.y - enemy.y);
                 if (dist < 100) {
                     this.projectiles.push({ x: tower.x, y: tower.y, tx: enemy.x, ty: enemy.y });
+                    this.score += enemy.score_reward;  // Use enemy's score value
+                    this.playerGold += enemy.reward_gold;  // Already doing this
                     this.enemies.splice(idx, 1);
-                    this.score += 10;
-                    this.playerGold += 50;
                 }
             });
         });

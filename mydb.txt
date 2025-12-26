@@ -114,7 +114,8 @@ CREATE TABLE enemies (
     base_def INT NOT NULL,
     speed FLOAT NOT NULL,
     reward_gold INT NOT NULL,
-    image_path VARCHAR(100),  
+    score_reward INT NOT NULL,
+    image_path VARCHAR(100)
 );
 
 
