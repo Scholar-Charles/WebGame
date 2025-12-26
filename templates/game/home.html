@@ -10,24 +10,25 @@
 </head>
 <body>
     <div class="game-container">
-        <header class="game-header">
+        <header class="game-header" role="banner">
             <div class="header-left">
                 <img src="{% static 'img/GameTitle.png' %}" alt="Tower Defense" class="game-logo">
             </div>
             <div class="header-right">
-                <div class="player-info">
+                <div class="player-info" aria-label="Player Info">
                     <span>Player: <strong>{{ player.username }}</strong></span>
                     <span>High Score: <strong>{{ player.high_score }}</strong></span>
                     <span>Games: <strong>{{ player.games_played }}</strong></span>
                 </div>
-                <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
-                <a href="{% url 'profile' %}" class="btn-profile">Profile</a>
+                <nav>
+                    <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
+                    <a href="{% url 'profile' %}" class="btn-profile">Profile</a>
+                </nav>
             </div>
         </header>
-
         <div class="game-content">
-            <aside class="game-sidebar">
-                <div class="towers-panel">
+            <aside class="game-sidebar" aria-label="Sidebar">
+                <section class="towers-panel">
                     <h3>Available Towers</h3>
                     <div class="towers-list">
                         {% for tower in towers %}
@@ -41,9 +42,8 @@
                         </div>
                         {% endfor %}
                     </div>
-                </div>
-
-                <div class="waves-panel">
+                </section>
+                <section class="waves-panel">
                     <h3>Wave Info</h3>
                     <div class="stats-display">
                         <div class="stat-item">
@@ -60,23 +60,19 @@
                         </div>
                     </div>
                     <div id="waveDisplay" class="wave-enemies-display"></div>
-                </div>
-
-                <div class="game-controls">
+                </section>
+                <section class="game-controls">
                     <button id="startGameBtn" class="btn-primary">Start Game</button>
                     <button id="pauseGameBtn" class="btn-secondary" disabled>Pause</button>
                     <button id="endGameBtn" class="btn-danger" disabled>End Game</button>
-                </div>
+                </section>
             </aside>
-
-            <main class="game-canvas">
+            <main class="game-canvas" aria-label="Game Canvas">
                 <div id="gameIdleOverlay" class="game-idle-overlay">
                     <div class="game-title-float">
                         <img src="{% static 'img/GameTitle.png' %}" alt="Tower Defense">
                     </div>
-                    <div class="start-game-prompt">
-                        ▶ CLICK START GAME ◀
-                    </div>
+                    <div class="start-game-prompt">▶ CLICK START GAME ◀</div>
                 </div>
                 <div id="gameLoadingOverlay" class="game-loading-overlay hidden">
                     <div class="loading-text">LOADING WAVE</div>
@@ -104,14 +100,11 @@
                 <canvas id="gameCanvas" width="600" height="450"></canvas>
             </main>
         </div>
-
-        <footer class="game-footer">
+        <footer class="game-footer" role="contentinfo">
             <a href="{% url 'leaderboard' %}">View Leaderboard</a>
             <span id="scoreDisplay">Score: 0</span>
         </footer>
     </div>
-
-    <!-- Only load our game script, no external analytics -->
     <script src="{% static 'js/game.js' %}"></script>
 </body>
 </html>
