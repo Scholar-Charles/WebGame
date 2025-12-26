@@ -28,10 +28,13 @@ def register(request):
             messages.error(request, 'Email already exists!')
             return redirect('register')
 
+        if Player.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists!')
+            return redirect('register')
+
         user = User.objects.create_user(username=username, email=email, password=password)
         Player.objects.create(
             player_id=uuid.uuid4(),
-            user=user,
             username=username
         )
         messages.success(request, 'Account created successfully! Please login.')
@@ -65,5 +68,8 @@ def logout_view(request):
 
 @login_required(login_url='login')
 def profile(request):
-    player = Player.objects.get(user=request.user)
+    player, created = Player.objects.get_or_create(
+        username=request.user.username,
+        defaults={'player_id': uuid.uuid4()}
+    )
     return render(request, 'authentication/profile.html', {'player': player})

@@ -8,7 +8,10 @@ import uuid
 
 @login_required(login_url='login')
 def game_home(request):
-    player = Player.objects.get(user=request.user)
+    player, created = Player.objects.get_or_create(
+        username=request.user.username,
+        defaults={'player_id': uuid.uuid4()}
+    )
     towers = Tower.objects.all()
     enemies = Enemy.objects.all()
     waves = Wave.objects.all()

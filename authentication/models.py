@@ -4,7 +4,7 @@ import uuid
 
 class Player(models.Model):
     player_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, db_column='auth_user_id')
+    username = models.CharField(max_length=50, unique=True)
     
     high_score = models.BigIntegerField(default=0)
     games_played = models.IntegerField(default=0)
@@ -16,4 +16,4 @@ class Player(models.Model):
         managed = False
 
     def __str__(self):
-        return self.user.username
+        return self.username
