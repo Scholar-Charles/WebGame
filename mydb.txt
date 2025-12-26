@@ -109,8 +109,10 @@ CREATE TABLE enemies (
     enemy_id SERIAL PRIMARY KEY,
     enemy_name VARCHAR(50) NOT NULL,
     base_hp INT NOT NULL,
+    base_def INT NOT NULL,
     speed FLOAT NOT NULL,
-    reward_gold INT NOT NULL
+    reward_gold INT NOT NULL,
+    image_path VARCHAR(100)  
 );
 
 
