@@ -78,6 +78,29 @@
                         ▶ CLICK START GAME ◀
                     </div>
                 </div>
+                <div id="gameLoadingOverlay" class="game-loading-overlay hidden">
+                    <div class="loading-text">LOADING WAVE</div>
+                    <div class="pixel-loader">
+                        <div class="pixel-bar"></div>
+                        <div class="pixel-bar"></div>
+                        <div class="pixel-bar"></div>
+                        <div class="pixel-bar"></div>
+                        <div class="pixel-bar"></div>
+                    </div>
+                </div>
+                <div id="waveCountdownOverlay" class="wave-countdown-overlay hidden">
+                    <div class="wave-title" id="waveTitle">WAVE 1</div>
+                    <div class="countdown-number" id="countdownNumber">3</div>
+                </div>
+                <div id="gameEndOverlay" class="game-end-overlay hidden">
+                    <div class="end-game-message">GAME ENDED</div>
+                    <div class="end-game-stats">
+                        <p>Final Score: <span class="end-game-stats-value" id="finalScore">0</span></p>
+                        <p>Wave Reached: <span class="end-game-stats-value" id="waveReached">1</span></p>
+                        <p>Gold Earned: <span class="end-game-stats-value" id="goldEarned">0</span></p>
+                    </div>
+                    <button class="restart-button" id="restartGameBtn">Play Again</button>
+                </div>
                 <canvas id="gameCanvas" width="600" height="450"></canvas>
             </main>
         </div>

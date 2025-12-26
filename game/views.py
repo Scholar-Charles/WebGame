@@ -35,10 +35,12 @@ def get_waves(request):
             wave_enemies = WaveEnemy.objects.filter(wave=wave).select_related('enemy')
             enemies = []
             for we in wave_enemies:
-                # Format enemy image path
+                # Format enemy image path - ensure it starts with /static/
                 image_path = we.enemy.image_path
-                if image_path and not image_path.startswith('/'):
-                    image_path = f'/static/{image_path}'
+                if image_path:
+                    if not image_path.startswith('/'):
+                        image_path = f'/static/{image_path}'
+                    print(f"Enemy image path: {we.enemy.enemy_name} -> {image_path}")
                 
                 enemies.append({
                     'enemy_id': we.enemy.enemy_id,

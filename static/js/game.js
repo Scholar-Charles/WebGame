@@ -27,6 +27,10 @@ class TowerDefenseGame {
         this.enemyImages = {};
         this.allTowersData = [];
         
+        // Wave countdown tracking
+        this.countdownActive = false;
+        this.countdownStartTime = null;
+        
         // Define the enemy path
         this.path = [
             { x: 50, y: 75 },
@@ -112,6 +116,22 @@ class TowerDefenseGame {
             .then(data => {
                 this.waves = data.waves;
                 console.log('Waves loaded:', this.waves);
+                
+                // Load enemy images
+                data.waves.forEach(wave => {
+                    wave.enemies.forEach(enemy => {
+                        if (enemy.image_path) {
+                            const img = new Image();
+                            img.src = enemy.image_path.startsWith('/') 
+                                ? enemy.image_path 
+                                : `/static/${enemy.image_path}`;
+                            img.onerror = () => console.warn(`Failed to load enemy image: ${img.src}`);
+                            this.enemyImages[enemy.enemy_id] = img;
+                            console.log(`Loading enemy image: ${enemy.enemy_name} -> ${img.src}`);
+                        }
+                    });
+                });
+                
                 this.displayWaveInfo();
             })
             .catch(err => console.error('Error loading waves:', err));
@@ -176,6 +196,12 @@ class TowerDefenseGame {
                     const overlay = document.getElementById('gameIdleOverlay');
                     if (overlay) {
                         overlay.classList.add('hidden');
+                    }
+
+                    // Show loading overlay
+                    const loadingOverlay = document.getElementById('gameLoadingOverlay');
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.remove('hidden');
                     }
 
                     if (this.waves.length > 0) {
@@ -296,6 +322,30 @@ class TowerDefenseGame {
         // Spawn enemies based on wave schedule
         const elapsedTime = (Date.now() - this.waveStartTime) / 1000;
         
+        // Hide loading overlay when first enemy spawns (only on wave 1)
+        if (this.enemies.length > 0 && this.currentWave === 1 && !this.countdownActive) {
+            const loadingOverlay = document.getElementById('gameLoadingOverlay');
+            if (loadingOverlay && !loadingOverlay.classList.contains('hidden')) {
+                loadingOverlay.classList.add('hidden');
+                // Only start countdown after wave 1, not before wave 2
+            }
+        }
+        
+        // Handle wave countdown
+        if (this.countdownActive) {
+            this.updateCountdown();
+            // Don't spawn enemies during countdown
+            this.updateUI();
+            return;
+        }
+        
+        // Check if all enemies from current wave are defeated (and not in countdown)
+        if (!this.countdownActive && this.waveEnemySpawnQueue.length === 0 && this.enemies.length === 0 && this.currentWave < this.waves.length) {
+            // Start countdown for next wave
+            this.startWaveCountdown();
+        }
+        
+        // Only spawn enemies if countdown is not active
         while (this.waveEnemySpawnQueue.length > 0 && 
                this.waveEnemySpawnQueue[0].spawnTime <= elapsedTime) {
             const we = this.waveEnemySpawnQueue.shift();
@@ -421,6 +471,58 @@ class TowerDefenseGame {
         this.updateUI();
     }
 
+    startWaveCountdown() {
+        // Only show countdown if there are more waves
+        if (this.currentWave < this.waves.length) {
+            this.countdownActive = true;
+            this.countdownStartTime = Date.now();
+            const countdownOverlay = document.getElementById('waveCountdownOverlay');
+            if (countdownOverlay) {
+                countdownOverlay.classList.remove('hidden');
+                const waveTitle = document.getElementById('waveTitle');
+                if (waveTitle) {
+                    waveTitle.textContent = `WAVE ${this.currentWave + 1}`;
+                }
+            }
+            console.log(`Countdown started for Wave ${this.currentWave + 1}`);
+        }
+    }
+
+    updateCountdown() {
+        const elapsed = (Date.now() - this.countdownStartTime) / 1000;
+        const remaining = Math.ceil(3 - elapsed);
+        
+        const countdownNumber = document.getElementById('countdownNumber');
+        if (countdownNumber) {
+            countdownNumber.textContent = Math.max(0, remaining);
+        }
+        
+        // When countdown reaches 0, prepare next wave
+        if (elapsed >= 3) {
+            this.countdownActive = false;
+            const countdownOverlay = document.getElementById('waveCountdownOverlay');
+            if (countdownOverlay) {
+                countdownOverlay.classList.add('hidden');
+            }
+            
+            // Move to next wave
+            this.currentWave++;
+            if (this.currentWave <= this.waves.length) {
+                // Reset wave start time AFTER countdown completes
+                this.waveStartTime = Date.now();
+                // Clear the spawn queue
+                this.waveEnemySpawnQueue = [];
+                this.setupWaveSpawning();
+                this.displayWaveInfo();
+                console.log(`Starting Wave ${this.currentWave}`);
+            } else {
+                // All waves completed
+                console.log('All waves completed!');
+                this.endGame();
+            }
+        }
+    }
+
     getPathLength() {
         let length = 0;
         for (let i = 0; i < this.path.length - 1; i++) {
@@ -513,10 +615,18 @@ class TowerDefenseGame {
 
         // Draw enemies
         this.enemies.forEach(enemy => {
-            this.ctx.fillStyle = '#ff6b6b';
-            this.ctx.beginPath();
-            this.ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
-            this.ctx.fill();
+            const enemyImg = this.enemyImages[enemy.enemy_id];
+            
+            // Try to draw enemy image first
+            if (enemyImg && enemyImg.complete && enemyImg.naturalWidth > 0) {
+                this.ctx.drawImage(enemyImg, enemy.x - 12, enemy.y - 12, 24, 24);
+            } else {
+                // Fallback to circle if image not loaded
+                this.ctx.fillStyle = '#ff6b6b';
+                this.ctx.beginPath();
+                this.ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
             
             // Draw health bar
             this.ctx.fillStyle = '#ff0000';
@@ -558,12 +668,81 @@ class TowerDefenseGame {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert(`Game Over! Final Score: ${this.score}`);
+                    // Show game end overlay with stats
+                    this.showGameEndOverlay();
                 } else {
                     alert('Error ending game');
                 }
             })
             .catch(err => console.error('Error:', err));
+    }
+
+    showGameEndOverlay() {
+        const endOverlay = document.getElementById('gameEndOverlay');
+        const finalScoreEl = document.getElementById('finalScore');
+        const waveReachedEl = document.getElementById('waveReached');
+        const goldEarnedEl = document.getElementById('goldEarned');
+        
+        if (endOverlay && finalScoreEl && waveReachedEl && goldEarnedEl) {
+            finalScoreEl.textContent = this.score;
+            waveReachedEl.textContent = this.currentWave;
+            goldEarnedEl.textContent = this.playerGold;
+            endOverlay.classList.remove('hidden');
+        }
+        
+        // Set up restart button listener
+        const restartBtn = document.getElementById('restartGameBtn');
+        if (restartBtn) {
+            restartBtn.onclick = () => this.restartGame();
+        }
+    }
+
+    restartGame() {
+        // Hide game end overlay
+        const endOverlay = document.getElementById('gameEndOverlay');
+        if (endOverlay) {
+            endOverlay.classList.add('hidden');
+        }
+
+        // Reset game state
+        this.sessionId = null;
+        this.isRunning = false;
+        this.isPaused = false;
+        this.playerGold = 500;
+        this.playerLives = 20;
+        this.currentWave = 1;
+        this.score = 0;
+        this.gameStartTime = null;
+        this.towers = [];
+        this.enemies = [];
+        this.projectiles = [];
+        this.selectedTower = null;
+        this.towerCooldowns = {};
+        this.waveEnemySpawnQueue = [];
+        this.waveStartTime = null;
+        this.countdownActive = false;
+        this.countdownStartTime = null;
+
+        // Reset UI
+        this.updateUI();
+        this.displayWaveInfo();
+        
+        // Redraw initial map
+        this.drawInitialMap();
+        
+        // Show idle overlay
+        const overlay = document.getElementById('gameIdleOverlay');
+        if (overlay) {
+            overlay.classList.remove('hidden');
+        }
+
+        // Re-enable start button
+        const startBtn = document.getElementById('startGameBtn');
+        if (startBtn) {
+            startBtn.disabled = false;
+        }
+
+        console.log('Game restarted - ready for new session');
     }
 }
 
