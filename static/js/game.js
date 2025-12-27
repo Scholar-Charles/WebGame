@@ -68,6 +68,13 @@ class TowerDefenseGame {
         this.loadWavesAndEnemies();
         this.loadTowerImages();
         this.drawInitialMap();
+        
+        const gameCanvas = document.getElementById('gameCanvas');
+        const gameIdleOverlay = document.getElementById('gameIdleOverlay');
+
+        gameCanvas.addEventListener('click', function() {
+            gameIdleOverlay.classList.add('hidden');
+        });
     }
 
     drawInitialMap() {

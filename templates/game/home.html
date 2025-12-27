@@ -68,6 +68,7 @@
                 </section>
             </aside>
             <main class="game-canvas" aria-label="Game Canvas">
+                <img id="gameMap" src="{% static 'img/map.png' %}" alt="Game Map" class="game-map-image">
                 <div id="gameIdleOverlay" class="game-idle-overlay">
                     <div class="game-title-float">
                         <img src="{% static 'img/GameTitle.png' %}" alt="Tower Defense">
@@ -97,7 +98,7 @@
                     </div>
                     <button class="restart-button" id="restartGameBtn">Play Again</button>
                 </div>
-                <canvas id="gameCanvas" width="600" height="450"></canvas>
+                <canvas id="gameCanvas" width="900" height="675"></canvas>
             </main>
         </div>
         <footer class="game-footer" role="contentinfo">
