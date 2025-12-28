@@ -77,6 +77,10 @@ class TowerDefenseGame {
         // Add pause button image
         this.pauseButtonImage = new Image();
         
+        // Add tower slot image
+        this.towerSlotImage = new Image();
+        this.towerSlots = []; // Array to store tower slot positions
+        
         // Add game title image
         this.gameTitle = new Image();
         this.gameTitleDropTime = null;
@@ -172,6 +176,12 @@ class TowerDefenseGame {
             console.warn('Failed to load pause button image at /static/img/pause.png');
         };
         
+        // Load tower slot image
+        this.towerSlotImage.src = '/static/img/tower-slot.png';
+        this.towerSlotImage.onerror = () => {
+            console.warn('Failed to load tower slot image at /static/img/tower-slot.png');
+        };
+        
         // Load pause menu button images
         this.playImage.src = '/static/img/play.png';
         this.playImage.onerror = () => {
@@ -260,8 +270,88 @@ class TowerDefenseGame {
         // Load waves and tower images on init
         this.loadWavesAndEnemies();
         this.loadTowerImages();
+        this.initializeTowerSlots();
         this.drawLobbyScreen();
         this.lobbyLoop();
+    }
+    
+    initializeTowerSlots() {
+        this.towerSlots = [];
+        const slotSize = 40;
+        
+        // Manually defined tower slot positions based on marked locations
+        // These coordinates correspond to the game world (before zoom is applied)
+        const slotPositions = [
+            // Top area - around first horizontal segment
+            { x: 90, y: 32 },
+            { x: 130, y: 32 },
+            { x: 188, y: 50 },
+            
+            // Upper middle area - around turn
+            { x: 110, y: 116 },
+            { x: 190, y: 110 },
+            { x: 240, y: 110 },
+            
+            // Middle area - around second turn
+            { x: 300, y: 110 },
+            { x: 340, y: 150 },
+            { x: 340, y: 260 },
+            
+            // Lower middle area
+            { x: 260, y: 190 },
+            { x: 290, y: 340 },
+            { x: 440, y: 260 },
+            
+            // Right side area
+            { x: 360, y: 340 },
+            { x: 420, y: 340 },
+            { x: 470, y: 340 }
+        ];
+        
+        // Create tower slots from defined positions
+        slotPositions.forEach(pos => {
+            this.towerSlots.push({
+                x: pos.x,
+                y: pos.y,
+                size: slotSize,
+                occupied: false,
+                towerIndex: null
+            });
+        });
+        
+        // Limit to 15 slots
+        this.towerSlots = this.towerSlots.slice(0, 15);
+        
+        console.log(`Initialized ${this.towerSlots.length} tower slots at marked positions`);
+    }
+    
+    drawTowerSlots() {
+        const slotSize = 40;
+        
+        this.towerSlots.forEach((slot, index) => {
+            const slotImg = this.towerSlotImage;
+            
+            // Draw slot image if loaded
+            if (slotImg && slotImg.complete && slotImg.naturalWidth > 0) {
+                this.ctx.drawImage(slotImg, slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
+            } else {
+                // Fallback - draw as a simple square with border
+                const occupied = slot.occupied;
+                this.ctx.fillStyle = occupied ? 'rgba(100, 100, 100, 0.7)' : 'rgba(200, 200, 150, 0.6)';
+                this.ctx.fillRect(slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
+                
+                this.ctx.strokeStyle = occupied ? '#666666' : '#999900';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
+                
+                // Draw "S" for slot indicator
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = 'bold 12px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText('S', slot.x, slot.y);
+            }
+        });
     }
     
     lobbyLoop() {
@@ -1022,9 +1112,24 @@ class TowerDefenseGame {
                 this.ctx.fillStyle = color;
                 this.ctx.fillRect(x, y, tileSize, tileSize);
                 
-                // Add pixelated tree details
+                // Add pixelated tree details - but not on tower slots
                 if (noise > 0.6) {
-                    this.drawPixelatedTree(x, y, tileSize);
+                    // Check if this tile overlaps with a tower slot
+                    const tileCenter = { x: x + tileSize / 2, y: y + tileSize / 2 };
+                    let isOnTowerSlot = false;
+                    
+                    for (let slot of this.towerSlots) {
+                        const distance = Math.sqrt((tileCenter.x - slot.x) ** 2 + (tileCenter.y - slot.y) ** 2);
+                        if (distance < 40) { // Tower slot radius
+                            isOnTowerSlot = true;
+                            break;
+                        }
+                    }
+                    
+                    // Only draw tree if not on a tower slot
+                    if (!isOnTowerSlot) {
+                        this.drawPixelatedTree(x, y, tileSize);
+                    }
                 }
             }
         }
@@ -1092,6 +1197,9 @@ class TowerDefenseGame {
         this.drawDirtPath();
         this.drawSpawnPoint();
         this.drawCastle();
+        
+        // Draw tower slots
+        this.drawTowerSlots();
 
         // Draw towers
         this.towers.forEach(tower => {
@@ -1316,6 +1424,35 @@ class TowerDefenseGame {
 
         console.log('Game restarted - ready for new session');
         this.lobbyLoop(); // Restart lobby animation and music
+    }
+
+    drawTowerSlots() {
+        const slotSize = 40;
+        
+        this.towerSlots.forEach((slot, index) => {
+            const slotImg = this.towerSlotImage;
+            
+            // Draw slot image if loaded
+            if (slotImg && slotImg.complete && slotImg.naturalWidth > 0) {
+                this.ctx.drawImage(slotImg, slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
+            } else {
+                // Fallback - draw as a simple square with border
+                const occupied = slot.occupied;
+                this.ctx.fillStyle = occupied ? 'rgba(100, 100, 100, 0.7)' : 'rgba(200, 200, 150, 0.6)';
+                this.ctx.fillRect(slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
+                
+                this.ctx.strokeStyle = occupied ? '#666666' : '#999900';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
+                
+                // Draw "S" for slot indicator
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = 'bold 12px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText('S', slot.x, slot.y);
+            }
+        });
     }
 
     drawDirtPath() {
@@ -1667,21 +1804,54 @@ class TowerDefenseGame {
 
         let x = clickX / this.zoomLevel;
         let y = clickY / this.zoomLevel;
+        
+        // Check if click is on a valid tower slot
+        const slotSize = 40;
+        let validSlot = null;
+        
+        for (let i = 0; i < this.towerSlots.length; i++) {
+            const slot = this.towerSlots[i];
+            const slotX = slot.x;
+            const slotY = slot.y;
+            const distance = Math.sqrt((x - slotX) ** 2 + (y - slotY) ** 2);
+            
+            // Check if click is within slot radius (accounting for zoom)
+            if (distance <= (slotSize / 2) / this.zoomLevel && !slot.occupied) {
+                validSlot = i;
+                break;
+            }
+        }
+        
+        // Only allow tower placement on valid, unoccupied slots
+        if (validSlot === null) {
+            console.log('Tower can only be placed on designated slots');
+            return;
+        }
 
         const tower = this.allTowersData.find(t => t.tower_id == this.selectedTower);
         if (!tower) return;
 
         if (this.playerGold >= tower.cost) {
+            // Get the slot position
+            const slot = this.towerSlots[validSlot];
+            
             this.towers.push({ 
-                x, y, 
+                x: slot.x, 
+                y: slot.y, 
                 radius: 15,
                 tower_id: this.selectedTower,
                 range: tower.range,
-                base_damage: tower.base_damage
+                base_damage: tower.base_damage,
+                slotIndex: validSlot
             });
+            
+            // Mark slot as occupied
+            slot.occupied = true;
+            slot.towerIndex = this.towers.length - 1;
+            
             this.playerGold -= tower.cost;
             this.updateUI();
-            console.log('Tower placed at:', x, y);
+            console.log('Tower placed on slot:', validSlot);
         } else {
             alert('Not enough gold! Need ' + tower.cost + ', have ' + this.playerGold);
         }
