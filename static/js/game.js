@@ -128,10 +128,15 @@ class TowerDefenseGame {
         this.hpIconImage = new Image();
         this.goldIconImage = new Image();
         
+        // Projectile image
+        this.projectileImage = new Image();
+        
         // Audio elements
         this.lobbyMusic = new Audio();
         this.battleMusic = new Audio();
         this.buttonClickSound = new Audio();
+        this.arrowShotSound = new Audio();
+        this.hitGoblinSound = new Audio();
         this.musicStarted = false; // Track if music has started
         
         this.init();
@@ -226,6 +231,12 @@ class TowerDefenseGame {
             console.warn('Failed to load gold icon at /static/img/gold-icon.png');
         };
         
+        // Load projectile image
+        this.projectileImage.src = '/static/img/archer-tower-projectile.png';
+        this.projectileImage.onerror = () => {
+            console.warn('Failed to load projectile image at /static/img/archer-tower-projectile.png');
+        };
+        
         // Load music button images
         this.musicOnImage.src = '/static/img/music-on.png';
         this.musicOnImage.onerror = () => {
@@ -256,6 +267,20 @@ class TowerDefenseGame {
         this.buttonClickSound.volume = 0.7; // Set volume to 70%
         this.buttonClickSound.onerror = () => {
             console.warn('Failed to load button click sound at /static/audio/button-click.mp3');
+        };
+        
+        // Load arrow shot sound
+        this.arrowShotSound.src = '/static/audio/arrow-shot.mp3';
+        this.arrowShotSound.volume = 0.6; // Set volume to 60%
+        this.arrowShotSound.onerror = () => {
+            console.warn('Failed to load arrow shot sound at /static/audio/arrow-shot.mp3');
+        };
+        
+        // Load hit goblin sound
+        this.hitGoblinSound.src = '/static/audio/hit-goblin.mp3';
+        this.hitGoblinSound.volume = 0.7; // Set volume to 70%
+        this.hitGoblinSound.onerror = () => {
+            console.warn('Failed to load hit goblin sound at /static/audio/hit-goblin.mp3');
         };
         
         // Load battle music
@@ -1537,7 +1562,7 @@ class TowerDefenseGame {
             this.ctx.stroke();
         });
 
-        // Draw projectiles (laser beams)
+        // Draw projectiles (arrow images)
         this.projectiles.forEach(proj => {
             const progress = proj.age / proj.maxAge;
             
@@ -1545,19 +1570,35 @@ class TowerDefenseGame {
             const targetX = proj.targetEnemy ? proj.targetEnemy.x : proj.x;
             const targetY = proj.targetEnemy ? proj.targetEnemy.y : proj.y;
             
-            // Draw laser line from tower to target
-            this.ctx.strokeStyle = `rgba(255, 200, 0, ${1 - progress})`;
-            this.ctx.lineWidth = 3;
-            this.ctx.beginPath();
-            this.ctx.moveTo(proj.x, proj.y);
-            this.ctx.lineTo(targetX, targetY);
-            this.ctx.stroke();
+            // Calculate angle from projectile to target
+            const angle = Math.atan2(targetY - proj.y, targetX - proj.x);
             
-            // Draw impact glow at target
-            this.ctx.fillStyle = `rgba(255, 150, 0, ${0.6 * (1 - progress)})`;
-            this.ctx.beginPath();
-            this.ctx.arc(targetX, targetY, 5 + progress * 10, 0, Math.PI * 2);
-            this.ctx.fill();
+            // Draw projectile image with rotation
+            if (this.projectileImage.complete && this.projectileImage.naturalWidth > 0) {
+                this.ctx.save();
+                this.ctx.globalAlpha = 1 - progress;
+                this.ctx.translate(proj.x, proj.y);
+                this.ctx.rotate(angle);
+                this.ctx.drawImage(this.projectileImage, -20, -15, 60, 30);
+                this.ctx.restore();
+            } else {
+                // Fallback - draw simple arrow shape
+                this.ctx.save();
+                this.ctx.globalAlpha = 1 - progress;
+                this.ctx.translate(proj.x, proj.y);
+                this.ctx.rotate(angle);
+                
+                // Draw arrow
+                this.ctx.fillStyle = '#FFD700';
+                this.ctx.beginPath();
+                this.ctx.moveTo(20, 0);
+                this.ctx.lineTo(-12, -10);
+                this.ctx.lineTo(-12, 10);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                this.ctx.restore();
+            }
         });
 
         // Draw enemies
@@ -2321,6 +2362,7 @@ class TowerDefenseGame {
                         maxAge: 150
                     });
                     this.towerCooldowns[tIdx] = currentTime;
+                    this.playArrowShotSound();
                 }
             }
         });
@@ -2332,6 +2374,7 @@ class TowerDefenseGame {
             if (proj.age >= proj.maxAge) {
                 if (proj.targetEnemy && proj.targetEnemy.alive) {
                     proj.targetEnemy.hp -= proj.damage;
+                    this.playHitGoblinSound();
                     
                     if (proj.targetEnemy.hp <= 0) {
                         proj.targetEnemy.alive = false;
@@ -2815,6 +2858,20 @@ class TowerDefenseGame {
         this.buttonClickSound.currentTime = 0;
         this.buttonClickSound.play().catch(err => {
             console.warn('Could not play button click sound:', err);
+        });
+    }
+    
+    playArrowShotSound() {
+        this.arrowShotSound.currentTime = 0;
+        this.arrowShotSound.play().catch(err => {
+            console.warn('Could not play arrow shot sound:', err);
+        });
+    }
+    
+    playHitGoblinSound() {
+        this.hitGoblinSound.currentTime = 0;
+        this.hitGoblinSound.play().catch(err => {
+            console.warn('Could not play hit goblin sound:', err);
         });
     }
 
