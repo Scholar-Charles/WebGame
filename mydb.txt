@@ -145,3 +145,25 @@ CREATE TABLE session_stats (
     gold_earned INT DEFAULT 0
 );
 
+-- =========================
+-- BUFFS TABLE
+-- =========================
+CREATE TABLE buffs (
+    buff_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    player_id UUID NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
+    session_id UUID REFERENCES game_sessions(session_id) ON DELETE CASCADE,
+    ad_click_id UUID REFERENCES ad_clicks(click_id) ON DELETE SET NULL,
+    
+    buff_type VARCHAR(50) NOT NULL, -- 'gameplay_speed', 'damage', 'attack_speed'
+    multiplier FLOAT NOT NULL, -- 2.0 for 2x
+    
+    activated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP NOT NULL,
+    
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE INDEX idx_buffs_player ON buffs(player_id);
+CREATE INDEX idx_buffs_session ON buffs(session_id);
+CREATE INDEX idx_buffs_active ON buffs(is_active, expires_at);
+
