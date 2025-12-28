@@ -97,6 +97,7 @@ class TowerDefenseGame {
         
         // Audio elements
         this.lobbyMusic = new Audio();
+        this.battleMusic = new Audio();
         this.buttonClickSound = new Audio();
         this.musicStarted = false; // Track if music has started
         
@@ -179,6 +180,14 @@ class TowerDefenseGame {
             console.warn('Failed to load button click sound at /static/audio/button-click.mp3');
         };
         
+        // Load battle music
+        this.battleMusic.src = '/static/audio/battle-music.mp3';
+        this.battleMusic.loop = true;
+        this.battleMusic.volume = 0.5; // Set volume to 50%
+        this.battleMusic.onerror = () => {
+            console.warn('Failed to load battle music at /static/audio/battle-music.mp3');
+        };
+        
         // Disable image smoothing to prevent gaps between tiles
         this.ctx.imageSmoothingEnabled = false;
         this.ctx.webkitImageSmoothingEnabled = false;
@@ -189,12 +198,22 @@ class TowerDefenseGame {
         const pauseBtn = document.getElementById('pauseGameBtn');
         const endBtn = document.getElementById('endGameBtn');
         
-        if (startBtn) startBtn.addEventListener('click', () => this.startGame());
-        if (pauseBtn) pauseBtn.addEventListener('click', () => this.togglePause());
-        if (endBtn) endBtn.addEventListener('click', () => this.endGame());
+        if (startBtn) startBtn.addEventListener('click', () => {
+            this.playButtonClickSound();
+            this.startGame();
+        });
+        if (pauseBtn) pauseBtn.addEventListener('click', () => {
+            this.playButtonClickSound();
+            this.togglePause();
+        });
+        if (endBtn) endBtn.addEventListener('click', () => {
+            this.playButtonClickSound();
+            this.endGame();
+        });
         
         document.querySelectorAll('.btn-select-tower').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                this.playButtonClickSound();
                 const towerId = e.target.closest('.tower-card').dataset.towerId;
                 this.selectTower(towerId);
             });
@@ -821,6 +840,10 @@ class TowerDefenseGame {
     endGame() {
         this.isRunning = false;
         
+        // Stop battle music
+        this.battleMusic.pause();
+        this.battleMusic.currentTime = 0;
+        
         const startBtn = document.getElementById('startGameBtn');
         const pauseBtn = document.getElementById('pauseGameBtn');
         const endBtn = document.getElementById('endGameBtn');
@@ -1036,9 +1059,13 @@ class TowerDefenseGame {
     startGame() {
         if (this.isRunning) return;
 
-        // Stop lobby music when starting game
+        // Stop lobby music and start battle music
         this.lobbyMusic.pause();
         this.lobbyMusic.currentTime = 0;
+        this.battleMusic.currentTime = 0;
+        this.battleMusic.play().catch(err => {
+            console.warn('Could not play battle music:', err);
+        });
 
         fetch('/game/api/start/', { 
             method: 'POST',
