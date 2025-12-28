@@ -2294,9 +2294,14 @@ class TowerDefenseGame {
         while (this.waveEnemySpawnQueue.length > 0 && 
                this.waveEnemySpawnQueue[0].spawnTime <= elapsedTime) {
             const we = this.waveEnemySpawnQueue.shift();
+            
+            // Add slight random offset to prevent stacking
+            const offsetX = (Math.random() - 0.5) * 30;
+            const offsetY = (Math.random() - 0.5) * 30;
+            
             this.enemies.push({
-                x: this.path[0].x,
-                y: this.path[0].y,
+                x: this.path[0].x + offsetX,
+                y: this.path[0].y + offsetY,
                 radius: 8,
                 pathProgress: 0,
                 hp: we.base_hp,
