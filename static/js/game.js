@@ -71,6 +71,9 @@ class TowerDefenseGame {
         // Add leaderboard button image
         this.leaderboardButtonImage = new Image();
         
+        // Add profile button image
+        this.profileButtonImage = new Image();
+        
         // Add game title image
         this.gameTitle = new Image();
         this.gameTitleDropTime = null;
@@ -84,10 +87,12 @@ class TowerDefenseGame {
         this.startButtonPressed = false;
         this.logoutButtonPressed = false;
         this.leaderboardButtonPressed = false;
+        this.profileButtonPressed = false;
         this.musicButtonPressed = false;
         this.startButtonPressTime = 0;
         this.logoutButtonPressTime = 0;
         this.leaderboardButtonPressTime = 0;
+        this.profileButtonPressTime = 0;
         this.musicButtonPressTime = 0;
         
         // Audio elements
@@ -134,6 +139,12 @@ class TowerDefenseGame {
         this.leaderboardButtonImage.src = '/static/img/view-lb.png';
         this.leaderboardButtonImage.onerror = () => {
             console.warn('Failed to load leaderboard button image at /static/img/view-lb.png');
+        };
+        
+        // Load profile button image
+        this.profileButtonImage.src = '/static/img/Profile.png';
+        this.profileButtonImage.onerror = () => {
+            console.warn('Failed to load profile button image at /static/img/Profile.png');
         };
         
         // Load music button images
@@ -247,6 +258,9 @@ class TowerDefenseGame {
         
         // Draw logout button
         this.drawLogoutButton();
+        
+        // Draw profile button
+        this.drawProfileButton();
         
         // Draw leaderboard button
         this.drawLeaderboardButton();
@@ -497,6 +511,65 @@ class TowerDefenseGame {
         
         // Store button position (exact button size)
         this.logoutButtonPos = {
+            left: buttonX,
+            top: buttonY,
+            right: buttonX + buttonSize,
+            bottom: buttonY + buttonSize
+        };
+    }
+
+    drawProfileButton() {
+        const buttonSize = 40;
+        const padding = 10;
+        const buttonX = this.canvas.width - (buttonSize * 2) - (padding * 2) - 10; // Left of leaderboard button
+        const buttonY = padding;
+        
+        // Calculate animation offset
+        let offsetX = buttonX;
+        let offsetY = buttonY;
+        let scale = 1;
+        
+        if (this.profileButtonPressed) {
+            const timeSincePress = Date.now() - this.profileButtonPressTime;
+            if (timeSincePress < 100) {
+                // Press down animation
+                offsetY += 3;
+                scale = 0.95;
+            } else if (timeSincePress < 200) {
+                // Pop back up animation
+                const progress = (timeSincePress - 100) / 100;
+                offsetY += 3 * (1 - progress);
+                scale = 0.95 + (0.05 * progress);
+            } else {
+                this.profileButtonPressed = false;
+            }
+        }
+        
+        // Draw button image if loaded
+        if (this.profileButtonImage.complete && this.profileButtonImage.naturalWidth > 0) {
+            this.ctx.save();
+            this.ctx.translate(offsetX + buttonSize / 2, offsetY + buttonSize / 2);
+            this.ctx.scale(scale, scale);
+            this.ctx.translate(-(buttonSize / 2), -(buttonSize / 2));
+            this.ctx.drawImage(this.profileButtonImage, 0, 0, buttonSize, buttonSize);
+            this.ctx.restore();
+        } else {
+            // Fallback - draw background and text
+            this.ctx.fillStyle = 'rgba(156, 39, 176, 0.9)';
+            this.ctx.fillRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
+            this.ctx.strokeStyle = '#9c27b0';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 10px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('P', offsetX + (buttonSize * scale) / 2, offsetY + (buttonSize * scale) / 2);
+        }
+        
+        // Store button position (exact button size)
+        this.profileButtonPos = {
             left: buttonX,
             top: buttonY,
             right: buttonX + buttonSize,
@@ -1077,7 +1150,21 @@ class TowerDefenseGame {
                 }
             }
             
-            // Check leaderboard button first
+            // Check profile button
+            if (this.profileButtonPos) {
+                if (clickX >= this.profileButtonPos.left && 
+                    clickX <= this.profileButtonPos.right &&
+                    clickY >= this.profileButtonPos.top && 
+                    clickY <= this.profileButtonPos.bottom) {
+                    this.profileButtonPressed = true;
+                    this.profileButtonPressTime = Date.now();
+                    this.playButtonClickSound();
+                    this.showProfileModal();
+                    return;
+                }
+            }
+            
+            // Check leaderboard button
             if (this.leaderboardButtonPos) {
                 if (clickX >= this.leaderboardButtonPos.left && 
                     clickX <= this.leaderboardButtonPos.right &&
@@ -1541,6 +1628,161 @@ class TowerDefenseGame {
             .catch(err => {
                 console.error('Error loading leaderboard:', err);
                 alert('Error loading leaderboard');
+            });
+    }
+
+    showProfileModal() {
+        // Fetch player profile data
+        fetch('/auth/api/profile/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove existing modal if it exists
+                    let existingModal = document.getElementById('profileModal');
+                    if (existingModal) {
+                        existingModal.remove();
+                    }
+
+                    // Create modal container
+                    const modal = document.createElement('div');
+                    modal.id = 'profileModal';
+                    modal.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.8);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 10000;
+                        padding: 20px;
+                        box-sizing: border-box;
+                    `;
+
+                    const html = `
+                        <div style="
+                            background: linear-gradient(135deg, #5c4033 0%, #6d4c41 25%, #5c4033 50%, #6d4c41 75%, #5c4033 100%);
+                            background-size: 200% 200%;
+                            color: #fff;
+                            padding: 30px;
+                            border-radius: 15px;
+                            width: 100%;
+                            max-width: 500px;
+                            border: 4px solid #3e2723;
+                            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -2px 5px rgba(0, 0, 0, 0.5);
+                            font-family: 'Press Start 2P', 'Courier New', monospace;
+                            position: relative;
+                            overflow: hidden;
+                        ">
+                            <div style="
+                                position: absolute;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                bottom: 0;
+                                background: 
+                                    repeating-linear-gradient(
+                                        90deg,
+                                        transparent,
+                                        transparent 2px,
+                                        rgba(0, 0, 0, 0.03) 2px,
+                                        rgba(0, 0, 0, 0.03) 4px
+                                    ),
+                                    repeating-linear-gradient(
+                                        0deg,
+                                        transparent,
+                                        transparent 2px,
+                                        rgba(0, 0, 0, 0.03) 2px,
+                                        rgba(0, 0, 0, 0.03) 4px
+                                    );
+                                border-radius: 15px;
+                                pointer-events: none;
+                            "></div>
+
+                            <h2 style="
+                                text-align: center;
+                                margin: 0 0 30px 0;
+                                color: #fff;
+                                font-weight: bold;
+                                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+                                position: relative;
+                                z-index: 1;
+                                font-size: 14px;
+                                letter-spacing: 2px;
+                            ">PLAYER PROFILE</h2>
+
+                            <div style="
+                                position: relative;
+                                z-index: 1;
+                                font-size: 11px;
+                                line-height: 2.2;
+                            ">
+                                <div style="margin-bottom: 15px; border-bottom: 1px solid #3e2723; padding-bottom: 12px;">
+                                    <span style="color: #ffc107;">Username:</span>
+                                    <span style="color: #ecf0f1; float: right;">${data.user}</span>
+                                </div>
+                                <div style="margin-bottom: 15px; border-bottom: 1px solid #3e2723; padding-bottom: 12px;">
+                                    <span style="color: #ffc107;">Email:</span>
+                                    <span style="color: #ecf0f1; float: right;">${data.email}</span>
+                                </div>
+                                <div style="margin-bottom: 15px; border-bottom: 1px solid #3e2723; padding-bottom: 12px;">
+                                    <span style="color: #ffc107;">Highest Score:</span>
+                                    <span style="color: #fff; float: right; font-weight: bold;">${data.highest_score}</span>
+                                </div>
+                                <div style="margin-bottom: 15px; border-bottom: 1px solid #3e2723; padding-bottom: 12px;">
+                                    <span style="color: #ffc107;">Highest Level:</span>
+                                    <span style="color: #fff; float: right; font-weight: bold;">${data.highest_level}</span>
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <span style="color: #ffc107;">Total Games:</span>
+                                    <span style="color: #ecf0f1; float: right;">${data.total_games || 0}</span>
+                                </div>
+                            </div>
+
+                            <button id="closeProfileBtn" style="
+                                width: 100%;
+                                padding: 12px;
+                                margin-top: 20px;
+                                background: linear-gradient(135deg, #4e342e 0%, #5d4037 100%);
+                                color: white;
+                                border: 2px solid #3e2723;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-size: 11px;
+                                font-family: 'Press Start 2P', 'Courier New', monospace;
+                                font-weight: bold;
+                                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+                                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                                position: relative;
+                                z-index: 1;
+                                transition: all 0.1s;
+                            ">CLOSE</button>
+                        </div>
+                    `;
+
+                    modal.innerHTML = html;
+                    document.body.appendChild(modal);
+
+                    // Close button handler
+                    document.getElementById('closeProfileBtn').addEventListener('click', () => {
+                        modal.remove();
+                    });
+
+                    // Close on outside click
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.remove();
+                        }
+                    });
+                } else {
+                    alert('Failed to load profile: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                console.error('Error loading profile:', err);
+                alert('Error loading profile');
             });
     }
 

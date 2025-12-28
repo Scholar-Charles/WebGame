@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
 from .models import Player
 import uuid
 
@@ -73,3 +74,35 @@ def profile(request):
         defaults={'player_id': uuid.uuid4()}
     )
     return render(request, 'authentication/profile.html', {'player': player})
+
+@login_required(login_url='login')
+def api_profile(request):
+    try:
+        player = Player.objects.get(username=request.user.username)
+        return JsonResponse({
+            'success': True,
+            'user': request.user.username,
+            'email': request.user.email,
+            'highest_score': player.high_score,
+            'highest_level': player.highest_level,
+            'total_games': player.games_played
+        })
+    except Player.DoesNotExist:
+        # Create player if doesn't exist
+        player = Player.objects.create(
+            player_id=uuid.uuid4(),
+            username=request.user.username
+        )
+        return JsonResponse({
+            'success': True,
+            'user': request.user.username,
+            'email': request.user.email,
+            'highest_score': player.high_score,
+            'highest_level': player.highest_level,
+            'total_games': player.games_played
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
