@@ -2374,10 +2374,10 @@ class TowerDefenseGame {
             if (proj.age >= proj.maxAge) {
                 if (proj.targetEnemy && proj.targetEnemy.alive) {
                     proj.targetEnemy.hp -= proj.damage;
-                    this.playHitGoblinSound();
                     
                     if (proj.targetEnemy.hp <= 0) {
                         proj.targetEnemy.alive = false;
+                        this.playHitGoblinSound();
                         this.score += proj.targetEnemy.score_reward;
                         this.playerGold += proj.targetEnemy.reward_gold;
                         
@@ -2862,10 +2862,15 @@ class TowerDefenseGame {
     }
     
     playArrowShotSound() {
-        this.arrowShotSound.currentTime = 0;
-        this.arrowShotSound.play().catch(err => {
-            console.warn('Could not play arrow shot sound:', err);
-        });
+        try {
+            const sound = this.arrowShotSound.cloneNode();
+            sound.volume = 0.6;
+            sound.play().catch(err => {
+                console.warn('Could not play arrow shot sound:', err);
+            });
+        } catch (err) {
+            console.warn('Could not clone arrow shot sound:', err);
+        }
     }
     
     playHitGoblinSound() {
