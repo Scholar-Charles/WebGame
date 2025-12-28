@@ -1607,7 +1607,7 @@ class TowerDefenseGame {
             
             // Try to draw enemy image first
             if (enemyImg && enemyImg.complete && enemyImg.naturalWidth > 0) {
-                this.ctx.drawImage(enemyImg, enemy.x - 12, enemy.y - 12, 24, 24);
+                this.ctx.drawImage(enemyImg, enemy.x - 20, enemy.y - 20, 40, 40);
             } else {
                 // Fallback to circle if image not loaded
                 this.ctx.fillStyle = '#ff6b6b';
@@ -1618,9 +1618,9 @@ class TowerDefenseGame {
             
             // Draw health bar
             this.ctx.fillStyle = '#ff0000';
-            this.ctx.fillRect(enemy.x - 10, enemy.y - 15, 20, 3);
+            this.ctx.fillRect(enemy.x - 15, enemy.y - 25, 30, 3);
             this.ctx.fillStyle = '#00ff00';
-            this.ctx.fillRect(enemy.x - 10, enemy.y - 15, (enemy.hp / enemy.maxHp) * 20, 3);
+            this.ctx.fillRect(enemy.x - 15, enemy.y - 25, (enemy.hp / enemy.maxHp) * 30, 3);
         });
         
         // Restore context state
