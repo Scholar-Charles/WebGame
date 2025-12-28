@@ -748,6 +748,106 @@ class TowerDefenseGame {
         };
     }
 
+    drawWaveInfoDisplay() {
+        const padding = 6;
+        const lineHeight = 13;
+        const textPadding = 8;
+        
+        // Set up fonts for measurement
+        this.ctx.font = 'bold 12px Arial';
+        const titleText = `Wave ${this.currentWave}`;
+        const titleWidth = this.ctx.measureText(titleText).width;
+        
+        this.ctx.font = '10px Arial';
+        let maxEnemyWidth = 0;
+        let enemyCount = 0;
+        
+        const currentWave = this.waves[this.currentWave - 1];
+        if (currentWave) {
+            currentWave.enemies.forEach((enemy, index) => {
+                if (index < 5) {
+                    const enemyText = `${enemy.enemy_name} ×${enemy.enemy_count}`;
+                    const width = this.ctx.measureText(enemyText).width;
+                    maxEnemyWidth = Math.max(maxEnemyWidth, width);
+                    enemyCount++;
+                }
+            });
+            
+            if (currentWave.enemies.length > 5) {
+                const moreText = `+${currentWave.enemies.length - 5} more`;
+                const width = this.ctx.measureText(moreText).width;
+                maxEnemyWidth = Math.max(maxEnemyWidth, width);
+                enemyCount++;
+            }
+        }
+        
+        // Calculate panel dimensions based on content
+        const contentWidth = Math.max(titleWidth, maxEnemyWidth);
+        const panelWidth = contentWidth + textPadding * 2 + 4;
+        const panelHeight = padding + 16 + 8 + (enemyCount * lineHeight) + padding;
+        
+        const panelX = this.canvas.width - panelWidth - 10;
+        const panelY = 60; // Below pause button
+        
+        // Draw leather background with gradient - darker with reduced opacity
+        const gradient = this.ctx.createLinearGradient(panelX, panelY, panelX, panelY + panelHeight);
+        gradient.addColorStop(0, 'rgba(40, 25, 15, 0.65)');
+        gradient.addColorStop(0.5, 'rgba(50, 30, 20, 0.65)');
+        gradient.addColorStop(1, 'rgba(40, 25, 15, 0.65)');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+        
+        // Add scanline overlay effect
+        for (let i = 0; i < panelHeight; i += 4) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            this.ctx.fillRect(panelX, panelY + i, panelWidth, 2);
+        }
+        
+        // Add border
+        this.ctx.strokeStyle = '#4a342c';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+        
+        // Draw title - Wave number
+        this.ctx.fillStyle = '#ffc107';
+        this.ctx.font = 'bold 12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText(titleText, panelX + panelWidth / 2, panelY + padding + 2);
+        
+        // Draw divider line
+        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(panelX + 4, panelY + padding + 18);
+        this.ctx.lineTo(panelX + panelWidth - 4, panelY + padding + 18);
+        this.ctx.stroke();
+        
+        // Draw enemy info
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = '10px Arial';
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'top';
+        
+        if (currentWave) {
+            let yOffset = padding + 24;
+            
+            currentWave.enemies.forEach((enemy, index) => {
+                if (index < 5) {
+                    const enemyText = `${enemy.enemy_name} ×${enemy.enemy_count}`;
+                    this.ctx.fillText(enemyText, panelX + textPadding, panelY + yOffset);
+                    yOffset += lineHeight;
+                }
+            });
+            
+            // If more than 5 enemies, show indicator
+            if (currentWave.enemies.length > 5) {
+                this.ctx.fillText(`+${currentWave.enemies.length - 5} more`, panelX + textPadding, panelY + yOffset);
+            }
+        }
+
+    }
+
     showPauseMenu() {
         // Draw semi-transparent overlay
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -1066,6 +1166,7 @@ class TowerDefenseGame {
         // Draw pause button during gameplay
         if (this.isRunning) {
             this.drawPauseButton();
+            this.drawWaveInfoDisplay();
         }
         
         // Draw pause menu if paused
