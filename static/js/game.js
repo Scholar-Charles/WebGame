@@ -31,6 +31,14 @@ class TowerDefenseGame {
         this.countdownActive = false;
         this.countdownStartTime = null;
         
+        // Tileset images
+        this.grassTile = new Image();
+        this.dirtPath = new Image();
+        this.treeRock = new Image();
+        this.bush = new Image();
+        this.spawnPoint = new Image();
+        this.castle = new Image();
+        
         // Define the enemy path
         this.path = [
             { x: 50, y: 75 },
@@ -41,10 +49,27 @@ class TowerDefenseGame {
             { x: 550, y: 300 }
         ];
         
+        // Decorative tiles
+        this.decorations = [
+            { type: 'tree', x: 450, y: 50 },
+            { type: 'tree', x: 100, y: 250 },
+            { type: 'bush', x: 200, y: 350 },
+            { type: 'tree', x: 500, y: 200 },
+            { type: 'bush', x: 50, y: 350 }
+        ];
+        
         this.init();
     }
 
     init() {
+        // Load tileset images
+        this.grassTile.src = '/static/img/grass-tile.png';
+        this.dirtPath.src = '/static/img/dirt-path.png';
+        this.treeRock.src = '/static/img/trees-rocks.png';
+        this.bush.src = '/static/img/bush.png';
+        this.spawnPoint.src = '/static/img/spawn-point.png';
+        this.castle.src = '/static/img/castle.png';
+        
         const startBtn = document.getElementById('startGameBtn');
         const pauseBtn = document.getElementById('pauseGameBtn');
         const endBtn = document.getElementById('endGameBtn');
@@ -78,12 +103,42 @@ class TowerDefenseGame {
     }
 
     drawInitialMap() {
-        // Draw the initial map with the path
-        this.ctx.fillStyle = '#1a1a1a';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        // Fill background with grass tiles
+        this.drawGrassBackground();
         
-        this.ctx.strokeStyle = '#667eea';
-        this.ctx.lineWidth = 40;
+        // Draw path with dirt tiles
+        this.drawDirtPath();
+        
+        // Draw decorations (trees, bushes)
+        this.drawDecorations();
+        
+        // Draw spawn point at path start
+        this.drawSpawnPoint();
+        
+        // Draw castle at path end
+        this.drawCastle();
+    }
+
+    drawGrassBackground() {
+        const tileSize = 32;
+        const cols = Math.ceil(this.canvas.width / tileSize);
+        const rows = Math.ceil(this.canvas.height / tileSize);
+        
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                if (this.grassTile.complete && this.grassTile.naturalWidth > 0) {
+                    this.ctx.drawImage(this.grassTile, col * tileSize, row * tileSize, tileSize, tileSize);
+                } else {
+                    this.ctx.fillStyle = '#2d5016';
+                    this.ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+                }
+            }
+        }
+    }
+
+    drawDirtPath() {
+        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.lineWidth = 50;
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
         this.ctx.beginPath();
@@ -93,28 +148,69 @@ class TowerDefenseGame {
         }
         this.ctx.stroke();
         
-        // Draw path outline
-        this.ctx.strokeStyle = '#888';
-        this.ctx.lineWidth = 2;
-        this.ctx.setLineDash([5, 5]);
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.path[0].x, this.path[0].y);
-        for (let i = 1; i < this.path.length; i++) {
-            this.ctx.lineTo(this.path[i].x, this.path[i].y);
+        // Draw dirt path segments with pattern
+        for (let i = 0; i < this.path.length - 1; i++) {
+            const startX = this.path[i].x;
+            const startY = this.path[i].y;
+            const endX = this.path[i + 1].x;
+            const endY = this.path[i + 1].y;
+            
+            const dx = endX - startX;
+            const dy = endY - startY;
+            const distance = Math.hypot(dx, dy);
+            const segments = Math.ceil(distance / 32);
+            
+            for (let j = 0; j < segments; j++) {
+                const t = j / segments;
+                const x = startX + dx * t;
+                const y = startY + dy * t;
+                
+                if (this.dirtPath.complete && this.dirtPath.naturalWidth > 0) {
+                    this.ctx.drawImage(this.dirtPath, x - 16, y - 16, 32, 32);
+                }
+            }
         }
-        this.ctx.stroke();
-        this.ctx.setLineDash([]);
+    }
+
+    drawDecorations() {
+        this.decorations.forEach(dec => {
+            if (dec.type === 'tree' && this.treeRock.complete) {
+                this.ctx.drawImage(this.treeRock, dec.x - 20, dec.y - 20, 40, 40);
+            } else if (dec.type === 'bush' && this.bush.complete) {
+                this.ctx.drawImage(this.bush, dec.x - 15, dec.y - 15, 30, 30);
+            }
+        });
+    }
+
+    drawSpawnPoint() {
+        const spawnX = this.path[0].x;
+        const spawnY = this.path[0].y;
         
-        // Draw start and end markers
-        this.ctx.fillStyle = '#4caf50';
-        this.ctx.beginPath();
-        this.ctx.arc(this.path[0].x, this.path[0].y, 8, 0, Math.PI * 2);
-        this.ctx.fill();
+        if (this.spawnPoint.complete && this.spawnPoint.naturalWidth > 0) {
+            this.ctx.drawImage(this.spawnPoint, spawnX - 25, spawnY - 25, 50, 50);
+        } else {
+            // Fallback: draw green circle
+            this.ctx.fillStyle = '#4caf50';
+            this.ctx.beginPath();
+            this.ctx.arc(spawnX, spawnY, 10, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+    }
+
+    drawCastle() {
+        const castleX = this.path[this.path.length - 1].x;
+        const castleY = this.path[this.path.length - 1].y;
         
-        this.ctx.fillStyle = '#f44336';
-        this.ctx.beginPath();
-        this.ctx.arc(this.path[this.path.length - 1].x, this.path[this.path.length - 1].y, 8, 0, Math.PI * 2);
-        this.ctx.fill();
+        if (this.castle.complete && this.castle.naturalWidth > 0) {
+            this.ctx.drawImage(this.castle, castleX - 35, castleY - 35, 70, 70);
+        } else {
+            // Fallback: draw red castle shape
+            this.ctx.fillStyle = '#f44336';
+            this.ctx.fillRect(castleX - 20, castleY - 20, 40, 40);
+            // Towers
+            this.ctx.fillRect(castleX - 25, castleY - 25, 10, 10);
+            this.ctx.fillRect(castleX + 15, castleY - 25, 10, 10);
+        }
     }
 
     loadWavesAndEnemies() {
@@ -560,20 +656,12 @@ class TowerDefenseGame {
     }
 
     draw() {
-        this.ctx.fillStyle = '#1a1a1a';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Draw path
-        this.ctx.strokeStyle = '#667eea';
-        this.ctx.lineWidth = 40;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.path[0].x, this.path[0].y);
-        for (let i = 1; i < this.path.length; i++) {
-            this.ctx.lineTo(this.path[i].x, this.path[i].y);
-        }
-        this.ctx.stroke();
+        // Draw tileset background
+        this.drawGrassBackground();
+        this.drawDirtPath();
+        this.drawDecorations();
+        this.drawSpawnPoint();
+        this.drawCastle();
 
         // Draw towers
         this.towers.forEach(tower => {
@@ -755,4 +843,9 @@ class TowerDefenseGame {
 
 document.addEventListener('DOMContentLoaded', () => {
     new TowerDefenseGame();
+});
+
+document.getElementById('startGameBtn').addEventListener('click', function() {
+    // Start game logic here
+    console.log('Game started!');
 });
