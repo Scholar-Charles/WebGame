@@ -282,27 +282,27 @@ class TowerDefenseGame {
         // Manually defined tower slot positions based on marked locations
         // These coordinates correspond to the game world (before zoom is applied)
         const slotPositions = [
-            // Top area - around first horizontal segment
+            // Top area - around first horizontal segment 1-3
             { x: 90, y: 32 },
             { x: 130, y: 32 },
             { x: 188, y: 50 },
             
-            // Upper middle area - around turn
+            // Upper middle area - around turn 4-6
             { x: 110, y: 116 },
             { x: 190, y: 110 },
             { x: 240, y: 110 },
             
-            // Middle area - around second turn
+            // Middle area - around second turn 7-9
             { x: 300, y: 110 },
             { x: 340, y: 150 },
             { x: 340, y: 260 },
             
-            // Lower middle area
+            // Lower middle area - around third turn 10-12
             { x: 260, y: 190 },
             { x: 290, y: 340 },
             { x: 440, y: 260 },
             
-            // Right side area
+            // Right side area - before castle 13-15
             { x: 360, y: 340 },
             { x: 420, y: 340 },
             { x: 470, y: 340 }
@@ -343,13 +343,15 @@ class TowerDefenseGame {
                 this.ctx.strokeStyle = occupied ? '#666666' : '#999900';
                 this.ctx.lineWidth = 2;
                 this.ctx.strokeRect(slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
-                
-                // Draw "S" for slot indicator
+            }
+            
+            // Draw slot number only if unoccupied
+            if (!slot.occupied) {
                 this.ctx.fillStyle = '#ffffff';
-                this.ctx.font = 'bold 12px Arial';
+                this.ctx.font = 'bold 14px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
-                this.ctx.fillText('S', slot.x, slot.y);
+                this.ctx.fillText((index + 1).toString(), slot.x, slot.y);
             }
         });
     }
@@ -1444,13 +1446,15 @@ class TowerDefenseGame {
                 this.ctx.strokeStyle = occupied ? '#666666' : '#999900';
                 this.ctx.lineWidth = 2;
                 this.ctx.strokeRect(slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
-                
-                // Draw "S" for slot indicator
+            }
+            
+            // Display slot number only if unoccupied
+            if (!slot.occupied) {
                 this.ctx.fillStyle = '#ffffff';
-                this.ctx.font = 'bold 12px Arial';
+                this.ctx.font = 'bold 14px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
-                this.ctx.fillText('S', slot.x, slot.y);
+                this.ctx.fillText((index + 1).toString(), slot.x, slot.y);
             }
         });
     }
