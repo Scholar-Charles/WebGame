@@ -124,6 +124,10 @@ class TowerDefenseGame {
         this.buildingMenuClosePressed = false;
         this.buildingMenuCloseTime = 0;
         
+        // HUD icons
+        this.hpIconImage = new Image();
+        this.goldIconImage = new Image();
+        
         // Audio elements
         this.lobbyMusic = new Audio();
         this.battleMusic = new Audio();
@@ -209,6 +213,17 @@ class TowerDefenseGame {
         this.closeButtonImage.src = '/static/img/close.png';
         this.closeButtonImage.onerror = () => {
             console.warn('Failed to load close button image at /static/img/close.png');
+        };
+        
+        // Load HUD icons
+        this.hpIconImage.src = '/static/img/hp-icon.png';
+        this.hpIconImage.onerror = () => {
+            console.warn('Failed to load hp icon at /static/img/hp-icon.png');
+        };
+        
+        this.goldIconImage.src = '/static/img/gold-icon.png';
+        this.goldIconImage.onerror = () => {
+            console.warn('Failed to load gold icon at /static/img/gold-icon.png');
         };
         
         // Load music button images
@@ -1105,6 +1120,92 @@ class TowerDefenseGame {
         this.ctx.fillText(label, offsetX + (size * scale) / 2, offsetY + size * scale + 10);
     }
 
+    drawHUD() {
+        const padding = 5;
+        const iconSize = 20;
+        const spacing = 26;
+        const panelPadding = 6;
+        const panelWidth = 80;
+        const panelHeight = 56;
+        
+        const panelX = padding;
+        const panelY = this.canvas.height - panelHeight - padding;
+        
+        // Draw leather background panel with gradient - reduced opacity
+        const gradient = this.ctx.createLinearGradient(panelX, panelY, panelX, panelY + panelHeight);
+        gradient.addColorStop(0, 'rgba(92, 64, 51, 0.55)');
+        gradient.addColorStop(0.5, 'rgba(109, 76, 65, 0.55)');
+        gradient.addColorStop(1, 'rgba(92, 64, 51, 0.55)');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+        
+        // Add scanline overlay effect
+        for (let i = 0; i < panelHeight; i += 3) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            this.ctx.fillRect(panelX, panelY + i, panelWidth, 1);
+        }
+        
+        // Add border
+        this.ctx.strokeStyle = '#4a342c';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+        
+        // Draw gold display (top)
+        const goldX = panelX + panelPadding;
+        const goldY = panelY + panelPadding;
+        
+        // Draw gold icon
+        if (this.goldIconImage.complete && this.goldIconImage.naturalWidth > 0) {
+            this.ctx.drawImage(this.goldIconImage, goldX, goldY, iconSize, iconSize);
+        } else {
+            // Fallback - draw gold symbol
+            this.ctx.fillStyle = '#ffc107';
+            this.ctx.font = 'bold 14px Arial';
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('$', goldX + 2, goldY + iconSize / 2);
+        }
+        
+        // Draw gold value
+        this.ctx.fillStyle = '#ffc107';
+        this.ctx.font = 'bold 10px Arial';
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(`${this.playerGold}`, goldX + iconSize + 3, goldY + iconSize / 2);
+        
+        // Draw separator line
+        const separatorY = panelY + panelHeight / 2;
+        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(panelX + 4, separatorY);
+        this.ctx.lineTo(panelX + panelWidth - 4, separatorY);
+        this.ctx.stroke();
+        
+        // Draw lives display (bottom)
+        const livesX = panelX + panelPadding;
+        const livesY = panelY + panelHeight / 2 + panelPadding;
+        
+        // Draw HP icon
+        if (this.hpIconImage.complete && this.hpIconImage.naturalWidth > 0) {
+            this.ctx.drawImage(this.hpIconImage, livesX, livesY, iconSize, iconSize);
+        } else {
+            // Fallback - draw heart symbol
+            this.ctx.fillStyle = '#ff0000';
+            this.ctx.font = 'bold 14px Arial';
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('❤', livesX + 1, livesY + iconSize / 2);
+        }
+        
+        // Draw lives value
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 10px Arial';
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(`${this.playerLives}`, livesX + iconSize + 3, livesY + iconSize / 2);
+    }
+
     drawBuildingButton() {
         const buttonSize = 50;
         const padding = 10;
@@ -1419,7 +1520,7 @@ class TowerDefenseGame {
             // Try to draw tower image first
             const towerImg = this.towerImages[tower.tower_id];
             if (towerImg && towerImg.complete) {
-                this.ctx.drawImage(towerImg, tower.x - 20, tower.y - 20, 40, 40);
+                this.ctx.drawImage(towerImg, tower.x - 42, tower.y - 45, 80, 80);
             } else {
                 // Fallback to circle if image not loaded
                 this.ctx.fillStyle = '#667eea';
@@ -1489,6 +1590,7 @@ class TowerDefenseGame {
             this.drawPauseButton();
             this.drawWaveInfoDisplay();
             this.drawBuildingButton();
+            this.drawHUD();
         }
         
         // Draw building menu if open
@@ -2118,7 +2220,7 @@ class TowerDefenseGame {
             
             this.playerGold -= tower.cost;
             this.updateUI();
-            console.log('Tower placed on slot:', validSlot);
+            console.log('Tower placed on slot:', validSlot, 'Tower data:', { range: tower.range, damage: tower.base_damage, attack_speed: tower.attack_speed });
         } else {
             alert('Not enough gold! Need ' + tower.cost + ', have ' + this.playerGold);
         }
