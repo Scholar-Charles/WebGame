@@ -117,6 +117,13 @@ class TowerDefenseGame {
         this.pauseMenuExitPressTime = 0;
         this.pauseMenuMutePressTime = 0;
         
+        // Building menu
+        this.buildingMenuOpen = false;
+        this.hammerButtonImage = new Image();
+        this.closeButtonImage = new Image();
+        this.buildingMenuClosePressed = false;
+        this.buildingMenuCloseTime = 0;
+        
         // Audio elements
         this.lobbyMusic = new Audio();
         this.battleMusic = new Audio();
@@ -192,6 +199,18 @@ class TowerDefenseGame {
         this.exitGameImage.onerror = () => {
             console.warn('Failed to load exit game image at /static/img/exit-game.png');
         };
+        
+        // Load hammer and close button images
+        this.hammerButtonImage.src = '/static/img/hammer.png';
+        this.hammerButtonImage.onerror = () => {
+            console.warn('Failed to load hammer button image at /static/img/hammer.png');
+        };
+        
+        this.closeButtonImage.src = '/static/img/close.png';
+        this.closeButtonImage.onerror = () => {
+            console.warn('Failed to load close button image at /static/img/close.png');
+        };
+        
         // Load music button images
         this.musicOnImage.src = '/static/img/music-on.png';
         this.musicOnImage.onerror = () => {
@@ -1086,6 +1105,198 @@ class TowerDefenseGame {
         this.ctx.fillText(label, offsetX + (size * scale) / 2, offsetY + size * scale + 10);
     }
 
+    drawBuildingButton() {
+        const buttonSize = 50;
+        const padding = 10;
+        const buttonX = this.canvas.width - buttonSize - padding;
+        const buttonY = this.canvas.height - buttonSize - padding;
+        
+        // Calculate animation offset
+        let offsetX = buttonX;
+        let offsetY = buttonY;
+        let scale = 1;
+        
+        // Draw button background
+        this.ctx.fillStyle = 'rgba(210, 180, 140, 0.8)';
+        this.ctx.fillRect(offsetX, offsetY, buttonSize, buttonSize);
+        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(offsetX, offsetY, buttonSize, buttonSize);
+        
+        // Draw hammer image if loaded
+        if (this.hammerButtonImage.complete && this.hammerButtonImage.naturalWidth > 0) {
+            this.ctx.drawImage(this.hammerButtonImage, offsetX, offsetY, buttonSize, buttonSize);
+        } else {
+            // Fallback - draw hammer symbol
+            this.ctx.fillStyle = '#8b4513';
+            this.ctx.font = 'bold 28px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('🔨', offsetX + buttonSize / 2, offsetY + buttonSize / 2);
+        }
+        
+        // Store button position
+        this.buildingButtonPos = {
+            left: buttonX,
+            top: buttonY,
+            right: buttonX + buttonSize,
+            bottom: buttonY + buttonSize
+        };
+    }
+
+    showBuildingMenu() {
+        // Draw semi-transparent overlay
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Menu dimensions - smaller
+        const menuWidth = 280;
+        const menuHeight = 320;
+        const menuX = (this.canvas.width - menuWidth) / 2;
+        const menuY = (this.canvas.height - menuHeight) / 2;
+        const padding = 10;
+        const buttonSize = 30;
+        const closeButtonPadding = 6;
+        
+        // Draw menu background with leather style
+        const gradient = this.ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuHeight);
+        gradient.addColorStop(0, '#5c4033');
+        gradient.addColorStop(0.5, '#6d4c41');
+        gradient.addColorStop(1, '#5c4033');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(menuX, menuY, menuWidth, menuHeight);
+        
+        // Add scanline overlay effect
+        for (let i = 0; i < menuHeight; i += 4) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            this.ctx.fillRect(menuX, menuY + i, menuWidth, 2);
+        }
+        
+        // Add border
+        this.ctx.strokeStyle = '#4a342c';
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeRect(menuX, menuY, menuWidth, menuHeight);
+        
+        // Draw title
+        this.ctx.fillStyle = '#ffc107';
+        this.ctx.font = 'bold 18px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText('BUILD TOWER', this.canvas.width / 2, menuY + padding);
+        
+        // Draw divider line
+        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(menuX + padding, menuY + 45);
+        this.ctx.lineTo(menuX + menuWidth - padding, menuY + 45);
+        this.ctx.stroke();
+        
+        // Draw close button (top right of menu)
+        const closeButtonX = menuX + menuWidth - buttonSize - closeButtonPadding;
+        const closeButtonY = menuY + closeButtonPadding;
+        this.drawBuildingMenuCloseButton(closeButtonX, closeButtonY, buttonSize);
+        
+        this.buildingMenuClosePos = {
+            left: closeButtonX,
+            top: closeButtonY,
+            right: closeButtonX + buttonSize,
+            bottom: closeButtonY + buttonSize
+        };
+        
+        // Draw tower list
+        const contentStartY = menuY + 55;
+        const contentHeight = menuHeight - 80;
+        const towerListStartY = contentStartY + 8;
+        
+        let yOffset = towerListStartY;
+        const towerItemHeight = 45;
+        
+        // Get available towers from allTowersData
+        if (this.allTowersData && this.allTowersData.length > 0) {
+            // Log tower data to see available fields
+            if (this.allTowersData.length > 0) {
+                console.log('Tower data sample:', this.allTowersData[0]);
+            }
+            
+            this.allTowersData.forEach((tower, index) => {
+                const towerItemX = menuX + padding;
+                const towerItemWidth = menuWidth - (padding * 2);
+                
+                // Draw tower item background
+                this.ctx.fillStyle = 'rgba(100, 80, 60, 0.6)';
+                this.ctx.fillRect(towerItemX, yOffset, towerItemWidth, towerItemHeight);
+                
+                // Draw border
+                this.ctx.strokeStyle = '#8b7355';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(towerItemX, yOffset, towerItemWidth, towerItemHeight);
+                
+                // Draw tower image if available
+                const towerImg = this.towerImages[tower.tower_id];
+                if (towerImg && towerImg.complete && towerImg.naturalWidth > 0) {
+                    this.ctx.drawImage(towerImg, towerItemX + 6, yOffset + 6, 30, 30);
+                } else {
+                    // Fallback - colored square
+                    this.ctx.fillStyle = '#8b7355';
+                    this.ctx.fillRect(towerItemX + 6, yOffset + 6, 30, 30);
+                }
+                
+                // Draw tower name
+                this.ctx.fillStyle = '#ffc107';
+                this.ctx.font = 'bold 11px Arial';
+                this.ctx.textAlign = 'left';
+                this.ctx.textBaseline = 'top';
+                this.ctx.fillText(tower.tower_name, towerItemX + 42, yOffset + 4);
+                
+                // Draw tower stats - use base_damage from API
+                const damageValue = tower.base_damage || tower.damage || 'N/A';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '9px Arial';
+                this.ctx.fillText(`DMG: ${damageValue} | RNG: ${tower.range} | SPD: ${tower.attack_speed}`, towerItemX + 42, yOffset + 17);
+                this.ctx.fillText(`Cost: ${tower.cost} Gold`, towerItemX + 42, yOffset + 28);
+                
+                // Store tower position for clicking
+                if (!this.towerMenuPositions) this.towerMenuPositions = [];
+                this.towerMenuPositions[index] = {
+                    left: towerItemX,
+                    top: yOffset,
+                    right: towerItemX + towerItemWidth,
+                    bottom: yOffset + towerItemHeight,
+                    towerId: tower.tower_id
+                };
+                
+                yOffset += towerItemHeight + 6;
+            });
+        }
+    }
+
+    drawBuildingMenuCloseButton(x, y, size) {
+        // Button background
+        this.ctx.fillStyle = 'rgba(200, 80, 80, 0.8)';
+        this.ctx.fillRect(x, y, size, size);
+        this.ctx.strokeStyle = '#8b4513';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(x, y, size, size);
+        
+        // Draw close image if loaded
+        if (this.closeButtonImage.complete && this.closeButtonImage.naturalWidth > 0) {
+            this.ctx.drawImage(this.closeButtonImage, x, y, size, size);
+        } else {
+            // Fallback - draw X symbol
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + 8, y + 8);
+            this.ctx.lineTo(x + size - 8, y + size - 8);
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + size - 8, y + 8);
+            this.ctx.lineTo(x + 8, y + size - 8);
+            this.ctx.stroke();
+        }
+    }
+
     drawGrassBackground() {
         const tileSize = 32;
         const cols = Math.ceil(this.canvas.width / tileSize);
@@ -1277,6 +1488,12 @@ class TowerDefenseGame {
         if (this.isRunning) {
             this.drawPauseButton();
             this.drawWaveInfoDisplay();
+            this.drawBuildingButton();
+        }
+        
+        // Draw building menu if open
+        if (this.buildingMenuOpen && this.isRunning) {
+            this.showBuildingMenu();
         }
         
         // Draw pause menu if paused
@@ -1801,6 +2018,52 @@ class TowerDefenseGame {
             
             // Don't allow tower placement when paused
             return;
+        }
+        
+        // Check building menu interactions during gameplay
+        if (this.buildingMenuOpen) {
+            // Check close button
+            if (this.buildingMenuClosePos) {
+                if (clickX >= this.buildingMenuClosePos.left && 
+                    clickX <= this.buildingMenuClosePos.right &&
+                    clickY >= this.buildingMenuClosePos.top && 
+                    clickY <= this.buildingMenuClosePos.bottom) {
+                    this.playButtonClickSound();
+                    this.buildingMenuOpen = false;
+                    return;
+                }
+            }
+            
+            // Check tower selection
+            if (this.towerMenuPositions) {
+                for (let pos of this.towerMenuPositions) {
+                    if (pos && clickX >= pos.left && 
+                        clickX <= pos.right &&
+                        clickY >= pos.top && 
+                        clickY <= pos.bottom) {
+                        this.playButtonClickSound();
+                        this.selectTower(pos.towerId);
+                        this.buildingMenuOpen = false;
+                        return;
+                    }
+                }
+            }
+            
+            // Don't allow tower placement when menu is open
+            return;
+        }
+        
+        // Check building button
+        if (this.isRunning && this.buildingButtonPos) {
+            if (clickX >= this.buildingButtonPos.left && 
+                clickX <= this.buildingButtonPos.right &&
+                clickY >= this.buildingButtonPos.top && 
+                clickY <= this.buildingButtonPos.bottom) {
+                this.playButtonClickSound();
+                this.buildingMenuOpen = !this.buildingMenuOpen;
+                this.towerMenuPositions = [];
+                return;
+            }
         }
         
         // Only place towers during active gameplay
