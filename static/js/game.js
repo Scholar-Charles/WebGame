@@ -1088,10 +1088,22 @@ class TowerDefenseGame {
 
     endGame() {
         this.isRunning = false;
+        this.isPaused = false; // Reset pause state
         
         // Stop battle music
         this.battleMusic.pause();
         this.battleMusic.currentTime = 0;
+        
+        // Reset pause menu mute state
+        this.pauseMenuBattleMusicMuted = false;
+        
+        // Resume lobby music if it's not muted
+        if (!this.musicMuted && this.musicStarted) {
+            this.lobbyMusic.currentTime = 0;
+            this.lobbyMusic.play().catch(err => {
+                console.warn('Could not play lobby music:', err);
+            });
+        }
         
         const startBtn = document.getElementById('startGameBtn');
         const pauseBtn = document.getElementById('pauseGameBtn');
@@ -1178,6 +1190,9 @@ class TowerDefenseGame {
         this.countdownActive = false;
         this.countdownStartTime = null;
         this.gameTitleDropTime = null;
+        
+        // Reset pause menu mute state
+        this.pauseMenuBattleMusicMuted = false;
 
         // Reset UI
         this.updateUI();
