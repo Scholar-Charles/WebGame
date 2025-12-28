@@ -131,6 +131,11 @@ class TowerDefenseGame {
         // Projectile image
         this.projectileImage = new Image();
         
+        // In-game message display
+        this.gameMessage = null;
+        this.gameMessageTime = 0;
+        this.gameMessageDuration = 2000; // 2 seconds
+        
         // Audio elements
         this.lobbyMusic = new Audio();
         this.battleMusic = new Audio();
@@ -1643,6 +1648,9 @@ class TowerDefenseGame {
         if (this.isPaused) {
             this.showPauseMenu();
         }
+        
+        // Draw in-game message (always on top)
+        this.drawGameMessage();
     }
 
     updateUI() {
@@ -2263,7 +2271,7 @@ class TowerDefenseGame {
             this.updateUI();
             console.log('Tower placed on slot:', validSlot, 'Tower data:', { range: tower.range, damage: tower.base_damage, attack_speed: tower.attack_speed });
         } else {
-            alert('Not enough gold! Need ' + tower.cost + ', have ' + this.playerGold);
+            this.showGameMessage('Not enough gold! Need ' + tower.cost + ', have ' + this.playerGold);
         }
     }
 
@@ -2883,6 +2891,56 @@ class TowerDefenseGame {
         this.hitGoblinSound.play().catch(err => {
             console.warn('Could not play hit goblin sound:', err);
         });
+    }
+    
+    showGameMessage(message) {
+        this.gameMessage = message;
+        this.gameMessageTime = Date.now();
+    }
+    
+    drawGameMessage() {
+        if (!this.gameMessage) return;
+        
+        const elapsed = Date.now() - this.gameMessageTime;
+        if (elapsed > this.gameMessageDuration) {
+            this.gameMessage = null;
+            return;
+        }
+        
+        // Calculate fade out effect
+        const fadeStart = this.gameMessageDuration - 300; // Fade out last 300ms
+        let opacity = 1;
+        if (elapsed > fadeStart) {
+            opacity = 1 - ((elapsed - fadeStart) / 300);
+        }
+        
+        // Draw message background
+        this.ctx.save();
+        this.ctx.globalAlpha = opacity * 0.8;
+        
+        const messageWidth = 300;
+        const messageHeight = 60;
+        const messageX = (this.canvas.width - messageWidth) / 2;
+        const messageY = this.canvas.height / 2 - 100;
+        
+        // Draw background
+        this.ctx.fillStyle = '#ff4444';
+        this.ctx.fillRect(messageX, messageY, messageWidth, messageHeight);
+        
+        // Draw border
+        this.ctx.strokeStyle = '#ff0000';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(messageX, messageY, messageWidth, messageHeight);
+        
+        // Draw text
+        this.ctx.globalAlpha = opacity;
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 14px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(this.gameMessage, this.canvas.width / 2, messageY + messageHeight / 2);
+        
+        this.ctx.restore();
     }
 
     initAudio() {
