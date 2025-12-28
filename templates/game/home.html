@@ -105,6 +105,36 @@
             <span id="scoreDisplay">Score: 0</span>
         </footer>
     </div>
+    <script>
+        // Add CSRF token to all fetch requests
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        const csrftoken = getCookie('csrftoken');
+        
+        // Override fetch to add CSRF token to POST requests
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            const [resource, config] = args;
+            if (config && config.method === 'POST') {
+                config.headers = config.headers || {};
+                config.headers['X-CSRFToken'] = csrftoken;
+            }
+            return originalFetch.apply(this, args);
+        };
+    </script>
     <script src="{% static 'js/game.js' %}"></script>
 </body>
 </html>

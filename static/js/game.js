@@ -1,6 +1,10 @@
 class TowerDefenseGame {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
+        if (!this.canvas) {
+            console.error('Canvas element not found!');
+            return;
+        }
         this.ctx = this.canvas.getContext('2d');
         this.sessionId = null;
         this.isRunning = false;
@@ -843,9 +847,4 @@ class TowerDefenseGame {
 
 document.addEventListener('DOMContentLoaded', () => {
     new TowerDefenseGame();
-});
-
-document.getElementById('startGameBtn').addEventListener('click', function() {
-    // Start game logic here
-    console.log('Game started!');
 });
