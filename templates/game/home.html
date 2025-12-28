@@ -11,64 +11,7 @@
 </head>
 <body>
     <div class="game-container">
-        <header class="game-header" role="banner">
-            <div class="header-left">
-                <img src="{% static 'img/GameTitle.png' %}" alt="Tower Defense" class="game-logo">
-            </div>
-            <div class="header-right">
-                <div class="player-info" aria-label="Player Info">
-                    <span>Player: <strong>{{ player.username }}</strong></span>
-                    <span>High Score: <strong>{{ player.high_score }}</strong></span>
-                    <span>Games: <strong>{{ player.games_played }}</strong></span>
-                </div>
-                <nav>
-                    <a href="{% url 'logout' %}" class="btn-logout">Logout</a>
-                    <a href="{% url 'profile' %}" class="btn-profile">Profile</a>
-                </nav>
-            </div>
-        </header>
-        <div class="game-content">
-            <aside class="game-sidebar" aria-label="Sidebar">
-                <section class="towers-panel">
-                    <h3>Available Towers</h3>
-                    <div class="towers-list">
-                        {% for tower in towers %}
-                        <div class="tower-card" data-tower-id="{{ tower.tower_id }}">
-                            <h4>{{ tower.tower_name }}</h4>
-                            <p>Damage: {{ tower.base_damage }}</p>
-                            <p>Speed: {{ tower.attack_speed }}</p>
-                            <p>Range: {{ tower.range }}</p>
-                            <p class="tower-cost">Cost: {{ tower.cost }} 💰</p>
-                            <button class="btn-select-tower">Select</button>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </section>
-                <section class="waves-panel">
-                    <h3>Wave Info</h3>
-                    <div class="stats-display">
-                        <div class="stat-item">
-                            <span class="stat-label">Current Wave:</span>
-                            <span class="stat-value" id="currentWave">1</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Gold:</span>
-                            <span class="stat-value" id="playerGold">500</span> 💰
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Lives:</span>
-                            <span class="stat-value" id="playerLives">20</span> ❤️
-                        </div>
-                    </div>
-                    <div id="waveDisplay" class="wave-enemies-display"></div>
-                </section>
-                <section class="game-controls">
-                    <button id="startGameBtn" class="btn-primary">Start Game</button>
-                    <button id="pauseGameBtn" class="btn-secondary" disabled>Pause</button>
-                    <button id="endGameBtn" class="btn-danger" disabled>End Game</button>
-                </section>
-            </aside>
-            <main class="game-canvas" aria-label="Game Canvas">
+        <main class="game-canvas" aria-label="Game Canvas">
                 <div id="gameIdleOverlay" class="game-idle-overlay">
                     <div class="game-title-float">
                         <img src="{% static 'img/GameTitle.png' %}" alt="Tower Defense">
@@ -101,10 +44,6 @@
                 <canvas id="gameCanvas" width="500" height="375"></canvas>
             </main>
         </div>
-        <footer class="game-footer" role="contentinfo">
-            <a href="{% url 'leaderboard' %}">View Leaderboard</a>
-            <span id="scoreDisplay">Score: 0</span>
-        </footer>
     </div>
     <script>
         // Add CSRF token to all fetch requests

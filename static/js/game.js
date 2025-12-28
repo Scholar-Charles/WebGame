@@ -75,17 +75,25 @@ class TowerDefenseGame {
         this.gameTitle = new Image();
         this.gameTitleDropTime = null;
         
+        // Add music button images
+        this.musicOnImage = new Image();
+        this.musicOffImage = new Image();
+        this.musicMuted = false;
+        
         // Button animation states
         this.startButtonPressed = false;
         this.logoutButtonPressed = false;
         this.leaderboardButtonPressed = false;
+        this.musicButtonPressed = false;
         this.startButtonPressTime = 0;
         this.logoutButtonPressTime = 0;
         this.leaderboardButtonPressTime = 0;
+        this.musicButtonPressTime = 0;
         
         // Audio elements
         this.lobbyMusic = new Audio();
         this.buttonClickSound = new Audio();
+        this.musicStarted = false; // Track if music has started
         
         this.init();
     }
@@ -126,6 +134,17 @@ class TowerDefenseGame {
         this.leaderboardButtonImage.src = '/static/img/view-lb.png';
         this.leaderboardButtonImage.onerror = () => {
             console.warn('Failed to load leaderboard button image at /static/img/view-lb.png');
+        };
+        
+        // Load music button images
+        this.musicOnImage.src = '/static/img/music-on.png';
+        this.musicOnImage.onerror = () => {
+            console.warn('Failed to load music on image at /static/img/music-on.png');
+        };
+        
+        this.musicOffImage.src = '/static/img/music-off.png';
+        this.musicOffImage.onerror = () => {
+            console.warn('Failed to load music off image at /static/img/music-off.png');
         };
         
         // Load game title image
@@ -184,14 +203,6 @@ class TowerDefenseGame {
     lobbyLoop() {
         if (this.isRunning) return; // Stop lobby loop when game starts
         
-        // Play lobby music if not already playing
-        if (this.lobbyMusic.paused) {
-            this.lobbyMusic.currentTime = 0;
-            this.lobbyMusic.play().catch(err => {
-                console.warn('Could not play lobby music:', err);
-            });
-        }
-        
         this.drawLobbyScreen();
         requestAnimationFrame(() => this.lobbyLoop());
     }
@@ -239,6 +250,69 @@ class TowerDefenseGame {
         
         // Draw leaderboard button
         this.drawLeaderboardButton();
+        
+        // Draw music button
+        this.drawMusicButton();
+    }
+    
+    drawMusicButton() {
+        const buttonSize = 40;
+        const padding = 10;
+        const buttonX = padding + 50; // Positioned to the right of logout button
+        const buttonY = this.canvas.height - buttonSize - padding;
+        
+        // Calculate animation offset
+        let offsetX = buttonX;
+        let offsetY = buttonY;
+        let scale = 1;
+        
+        if (this.musicButtonPressed) {
+            const timeSincePress = Date.now() - this.musicButtonPressTime;
+            if (timeSincePress < 100) {
+                // Press down animation
+                offsetY += 3;
+                scale = 0.95;
+            } else if (timeSincePress < 200) {
+                // Pop back up animation
+                const progress = (timeSincePress - 100) / 100;
+                offsetY += 3 * (1 - progress);
+                scale = 0.95 + (0.05 * progress);
+            } else {
+                this.musicButtonPressed = false;
+            }
+        }
+        
+        // Draw button image based on mute state
+        const buttonImage = this.musicMuted ? this.musicOffImage : this.musicOnImage;
+        if (buttonImage.complete && buttonImage.naturalWidth > 0) {
+            this.ctx.save();
+            this.ctx.translate(offsetX + buttonSize / 2, offsetY + buttonSize / 2);
+            this.ctx.scale(scale, scale);
+            this.ctx.translate(-(buttonSize / 2), -(buttonSize / 2));
+            this.ctx.drawImage(buttonImage, 0, 0, buttonSize, buttonSize);
+            this.ctx.restore();
+        } else {
+            // Fallback - draw background and text
+            this.ctx.fillStyle = this.musicMuted ? 'rgba(211, 211, 211, 0.9)' : 'rgba(255, 193, 7, 0.9)';
+            this.ctx.fillRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
+            this.ctx.strokeStyle = this.musicMuted ? '#d3d3d3' : '#ffc107';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 10px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(this.musicMuted ? 'M' : '♪', offsetX + (buttonSize * scale) / 2, offsetY + (buttonSize * scale) / 2);
+        }
+        
+        // Store button position (exact button size)
+        this.musicButtonPos = {
+            left: buttonX,
+            top: buttonY,
+            right: buttonX + buttonSize,
+            bottom: buttonY + buttonSize
+        };
     }
     
     drawGameTitle() {
@@ -987,6 +1061,22 @@ class TowerDefenseGame {
         clickY = clickY * scaleY;
         
         if (!this.isRunning) {
+            // Initialize audio on first user interaction
+            this.initAudio();
+            
+            // Check music button first
+            if (this.musicButtonPos) {
+                if (clickX >= this.musicButtonPos.left && 
+                    clickX <= this.musicButtonPos.right &&
+                    clickY >= this.musicButtonPos.top && 
+                    clickY <= this.musicButtonPos.bottom) {
+                    this.musicButtonPressed = true;
+                    this.musicButtonPressTime = Date.now();
+                    this.toggleMute();
+                    return;
+                }
+            }
+            
             // Check leaderboard button first
             if (this.leaderboardButtonPos) {
                 if (clickX >= this.leaderboardButtonPos.left && 
@@ -1491,6 +1581,35 @@ class TowerDefenseGame {
         this.buttonClickSound.play().catch(err => {
             console.warn('Could not play button click sound:', err);
         });
+    }
+
+    initAudio() {
+        // Start lobby music on first user interaction
+        if (!this.musicStarted && !this.isRunning) {
+            this.musicStarted = true;
+            this.lobbyMusic.currentTime = 0;
+            this.lobbyMusic.play().catch(err => {
+                console.warn('Could not play lobby music:', err);
+            });
+        }
+    }
+
+    toggleMute() {
+        this.musicMuted = !this.musicMuted;
+        
+        if (this.musicMuted) {
+            this.lobbyMusic.pause();
+        } else {
+            // Only play if music has been started
+            if (this.musicStarted) {
+                this.lobbyMusic.play().catch(err => {
+                    console.warn('Could not resume lobby music:', err);
+                });
+            }
+        }
+        
+        // Play button click sound when toggling mute
+        this.playButtonClickSound();
     }
 }
 
