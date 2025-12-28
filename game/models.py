@@ -118,7 +118,9 @@ class Leaderboard(models.Model):
     player = models.ForeignKey('authentication.Player', on_delete=models.CASCADE)
     rank = models.IntegerField()
     score = models.BigIntegerField()
+    level = models.IntegerField(default=1)
     achieved_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'leaderboard'

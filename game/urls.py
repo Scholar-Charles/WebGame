@@ -8,5 +8,6 @@ urlpatterns = [
     path('api/end/', views.end_game, name='end_game'),
     path('api/waves/', views.get_waves, name='get_waves'),
     path('api/towers/', views.get_towers, name='get_towers'),
+    path('api/leaderboard/', views.get_leaderboard, name='get_leaderboard'),
     path('api/update-stats/', views.update_session_stats, name='update_session_stats'),
 ]

@@ -93,7 +93,7 @@ def start_game(request):
 
 @require_http_methods(["POST"])
 def end_game(request):
-    """End the current game session"""
+    """End the current game session and update player stats"""
     try:
         session_id = request.POST.get('session_id')
         final_score = int(request.POST.get('final_score', 0))
@@ -106,11 +106,37 @@ def end_game(request):
         session.save()
 
         player = session.player
+        
+        # Update player high score and highest level
         player.high_score = max(player.high_score, final_score)
+        player.highest_level = max(player.highest_level, level_reached)
         player.games_played += 1
         player.save()
 
-        logger.info(f"Game session ended for player {player.username} with score {final_score}")
+        # Update or create leaderboard entry for this player
+        leaderboard_entry, created = Leaderboard.objects.get_or_create(
+            player=player,
+            defaults={
+                'rank': 1,  # Will be recalculated
+                'score': player.high_score,
+                'level': player.highest_level
+            }
+        )
+        
+        if not created:
+            # Update existing entry with latest stats
+            leaderboard_entry.score = player.high_score
+            leaderboard_entry.level = player.highest_level
+            leaderboard_entry.save()
+        
+        # Recalculate all ranks based on scores and levels
+        leaderboard_entries = Leaderboard.objects.order_by('-score', '-level', 'updated_at')
+        for rank, entry in enumerate(leaderboard_entries, 1):
+            if entry.rank != rank:
+                entry.rank = rank
+                entry.save()
+
+        logger.info(f"Game session ended for player {player.username} with score {final_score}, level {level_reached}")
         return JsonResponse({'success': True})
     except GameSession.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Session not found'}, status=404)
@@ -162,3 +188,37 @@ def leaderboard(request):
     """Render leaderboard page"""
     leaderboard = Leaderboard.objects.all().order_by('rank')[:100]
     return render(request, 'game/leaderboard.html', {'leaderboard': leaderboard})
+
+@require_http_methods(["GET"])
+def get_leaderboard(request):
+    """Fetch leaderboard data as JSON"""
+    try:
+        # Fetch top 50 players from leaderboard ordered by rank
+        leaderboard_entries = Leaderboard.objects.select_related('player').order_by('rank')[:50]
+        
+        if not leaderboard_entries.exists():
+            return JsonResponse({
+                'success': True,
+                'leaderboard': []
+            })
+        
+        leaderboard_data = []
+        for entry in leaderboard_entries:
+            # Use the level stored in the Leaderboard entry (updated when game ends)
+            leaderboard_data.append({
+                'rank': entry.rank,
+                'username': entry.player.username,
+                'score': entry.score,
+                'level': entry.level
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'leaderboard': leaderboard_data
+        })
+    except Exception as e:
+        logger.error(f"Error in get_leaderboard: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

@@ -80,17 +80,18 @@ body {
     display: flex;
     gap: 20px;
     flex: 1;
-    padding: 20px;
-    max-width: 1400px;
+    padding: 10px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
 .game-sidebar {
-    width: 200px;
+    width: 180px;
     background: #2a2a2a;
-    padding: 15px;
+    padding: 10px;
     overflow-y: auto;
     border-right: 1px solid #444;
+    max-height: calc(100vh - 180px);
 }
 
 .towers-panel, .waves-panel, .game-controls {
@@ -292,8 +293,11 @@ button:disabled {
     border-radius: 8px;
     overflow: hidden;
     position: relative;
-    min-width: 900px;
-    min-height: 675px;
+    min-width: 500px;
+    min-height: 375px;
+    max-width: 600px;
+    max-height: 450px;
+    margin: 0 auto;
 }
 
 #gameCanvas {
@@ -338,7 +342,7 @@ button:disabled {
     height: 100%;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(5px);
-    display: flex;
+    display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -540,4 +544,25 @@ button:disabled {
         transform: scale(1);
         opacity: 1;
     }
+}
+
+/* Game Loading Overlay - COMPLETELY REMOVED */
+.game-loading-overlay {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -9999 !important;
+}
+
+.game-loading-overlay * {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+.loading-text,
+.pixel-loader,
+.pixel-bar {
+    display: none !important;
+    visibility: hidden !important;
 }
