@@ -74,6 +74,9 @@ class TowerDefenseGame {
         // Add profile button image
         this.profileButtonImage = new Image();
         
+        // Add pause button image
+        this.pauseButtonImage = new Image();
+        
         // Add game title image
         this.gameTitle = new Image();
         this.gameTitleDropTime = null;
@@ -83,17 +86,32 @@ class TowerDefenseGame {
         this.musicOffImage = new Image();
         this.musicMuted = false;
         
+        // Add pause menu button images
+        this.playImage = new Image(); // Resume button image
+        this.exitGameImage = new Image(); // Exit game button image
+        this.pauseMenuBattleMusicMuted = false; // Separate mute state for pause menu
+        
         // Button animation states
         this.startButtonPressed = false;
         this.logoutButtonPressed = false;
         this.leaderboardButtonPressed = false;
         this.profileButtonPressed = false;
         this.musicButtonPressed = false;
+        this.pauseButtonPressed = false;
         this.startButtonPressTime = 0;
         this.logoutButtonPressTime = 0;
         this.leaderboardButtonPressTime = 0;
         this.profileButtonPressTime = 0;
         this.musicButtonPressTime = 0;
+        this.pauseButtonPressTime = 0;
+        
+        // Pause menu button states
+        this.pauseMenuResumePressed = false;
+        this.pauseMenuExitPressed = false;
+        this.pauseMenuMutePressed = false;
+        this.pauseMenuResumePressTime = 0;
+        this.pauseMenuExitPressTime = 0;
+        this.pauseMenuMutePressTime = 0;
         
         // Audio elements
         this.lobbyMusic = new Audio();
@@ -148,6 +166,22 @@ class TowerDefenseGame {
             console.warn('Failed to load profile button image at /static/img/Profile.png');
         };
         
+        // Load pause button image
+        this.pauseButtonImage.src = '/static/img/pause.png';
+        this.pauseButtonImage.onerror = () => {
+            console.warn('Failed to load pause button image at /static/img/pause.png');
+        };
+        
+        // Load pause menu button images
+        this.playImage.src = '/static/img/play.png';
+        this.playImage.onerror = () => {
+            console.warn('Failed to load play image at /static/img/play.png');
+        };
+        
+        this.exitGameImage.src = '/static/img/exit-game.png';
+        this.exitGameImage.onerror = () => {
+            console.warn('Failed to load exit game image at /static/img/exit-game.png');
+        };
         // Load music button images
         this.musicOnImage.src = '/static/img/music-on.png';
         this.musicOnImage.onerror = () => {
@@ -655,6 +689,211 @@ class TowerDefenseGame {
         };
     }
 
+    drawPauseButton() {
+        const buttonSize = 40;
+        const padding = 10;
+        const buttonX = this.canvas.width - buttonSize - padding;
+        const buttonY = padding;
+        
+        // Calculate animation offset
+        let offsetX = buttonX;
+        let offsetY = buttonY;
+        let scale = 1;
+        
+        if (this.pauseButtonPressed) {
+            const timeSincePress = Date.now() - this.pauseButtonPressTime;
+            if (timeSincePress < 100) {
+                // Press down animation
+                offsetY += 3;
+                scale = 0.95;
+            } else if (timeSincePress < 200) {
+                // Pop back up animation
+                const progress = (timeSincePress - 100) / 100;
+                offsetY += 3 * (1 - progress);
+                scale = 0.95 + (0.05 * progress);
+            } else {
+                this.pauseButtonPressed = false;
+            }
+        }
+        
+        // Draw button image if loaded
+        if (this.pauseButtonImage.complete && this.pauseButtonImage.naturalWidth > 0) {
+            this.ctx.save();
+            this.ctx.translate(offsetX + buttonSize / 2, offsetY + buttonSize / 2);
+            this.ctx.scale(scale, scale);
+            this.ctx.translate(-(buttonSize / 2), -(buttonSize / 2));
+            this.ctx.drawImage(this.pauseButtonImage, 0, 0, buttonSize, buttonSize);
+            this.ctx.restore();
+        } else {
+            // Fallback - draw background and text
+            this.ctx.fillStyle = 'rgba(255, 152, 0, 0.9)';
+            this.ctx.fillRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
+            this.ctx.strokeStyle = '#ff9800';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 10px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(this.isPaused ? '▶' : '⏸', offsetX + (buttonSize * scale) / 2, offsetY + (buttonSize * scale) / 2);
+        }
+        
+        // Store button position (exact button size)
+        this.pauseButtonPos = {
+            left: buttonX,
+            top: buttonY,
+            right: buttonX + buttonSize,
+            bottom: buttonY + buttonSize
+        };
+    }
+
+    showPauseMenu() {
+        // Draw semi-transparent overlay
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Menu dimensions - smaller rectangular shape
+        const menuWidth = 320;
+        const menuHeight = 180;
+        const menuX = (this.canvas.width - menuWidth) / 2;
+        const menuY = (this.canvas.height - menuHeight) / 2;
+        const buttonSize = 50;
+        const buttonSpacing = 25;
+        const padding = 15;
+        
+        // Draw leather background with gradient
+        const gradient = this.ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuHeight);
+        gradient.addColorStop(0, '#5c4033');
+        gradient.addColorStop(0.5, '#6d4c41');
+        gradient.addColorStop(1, '#5c4033');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(menuX, menuY, menuWidth, menuHeight);
+        
+        // Add scanline overlay effect
+        for (let i = 0; i < menuHeight; i += 4) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            this.ctx.fillRect(menuX, menuY + i, menuWidth, 2);
+        }
+        
+        // Add border and inset shadow
+        this.ctx.strokeStyle = '#4a342c';
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeRect(menuX, menuY, menuWidth, menuHeight);
+        
+        // Draw title
+        this.ctx.fillStyle = '#ffc107';
+        this.ctx.font = 'bold 16px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText('PAUSED', this.canvas.width / 2, menuY + padding);
+        
+        // Draw divider line
+        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(menuX + padding, menuY + 45);
+        this.ctx.lineTo(menuX + menuWidth - padding, menuY + 45);
+        this.ctx.stroke();
+        
+        // Button layout - 3 buttons in a row, centered
+        const buttonsAreaY = menuY + 75;
+        const totalButtonWidth = (buttonSize * 3) + (buttonSpacing * 2);
+        const buttonsStartX = (this.canvas.width - totalButtonWidth) / 2;
+        
+        // Resume Button
+        const resumeX = buttonsStartX;
+        const resumeY = buttonsAreaY;
+        this.drawPauseMenuButton(resumeX, resumeY, buttonSize, this.playImage, 'Resume', this.pauseMenuResumePressed, this.pauseMenuResumePressTime, '▶');
+        this.pauseMenuResumePos = {
+            left: resumeX,
+            top: resumeY,
+            right: resumeX + buttonSize,
+            bottom: resumeY + buttonSize
+        };
+        
+        // Exit Button
+        const exitX = buttonsStartX + buttonSize + buttonSpacing;
+        const exitY = buttonsAreaY;
+        this.drawPauseMenuButton(exitX, exitY, buttonSize, this.exitGameImage, 'Exit', this.pauseMenuExitPressed, this.pauseMenuExitPressTime, '⊗');
+        this.pauseMenuExitPos = {
+            left: exitX,
+            top: exitY,
+            right: exitX + buttonSize,
+            bottom: exitY + buttonSize
+        };
+        
+        // Mute Button
+        const muteX = buttonsStartX + (buttonSize + buttonSpacing) * 2;
+        const muteY = buttonsAreaY;
+        const muteImage = this.pauseMenuBattleMusicMuted ? this.musicOffImage : this.musicOnImage;
+        this.drawPauseMenuButton(muteX, muteY, buttonSize, muteImage, 'Mute', this.pauseMenuMutePressed, this.pauseMenuMutePressTime, this.pauseMenuBattleMusicMuted ? '🔇' : '🔊');
+        this.pauseMenuMutePos = {
+            left: muteX,
+            top: muteY,
+            right: muteX + buttonSize,
+            bottom: muteY + buttonSize
+        };
+    }
+
+    drawPauseMenuButton(x, y, size, image, label, isPressed, pressTime, fallbackText) {
+        // Calculate animation offset
+        let offsetX = x;
+        let offsetY = y;
+        let scale = 1;
+        
+        if (isPressed) {
+            const timeSincePress = Date.now() - pressTime;
+            if (timeSincePress < 100) {
+                offsetY += 3;
+                scale = 0.95;
+            } else if (timeSincePress < 200) {
+                // Return to normal
+            } else {
+                // Reset pressed state
+                this.pauseMenuResumePressed = false;
+                this.pauseMenuExitPressed = false;
+                this.pauseMenuMutePressed = false;
+            }
+        }
+        
+        // Draw button background with leather texture
+        const gradient = this.ctx.createLinearGradient(offsetX, offsetY, offsetX, offsetY + size);
+        gradient.addColorStop(0, '#8b7355');
+        gradient.addColorStop(1, '#6d5d52');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(offsetX, offsetY, size * scale, size * scale);
+        
+        // Button border
+        this.ctx.strokeStyle = '#4a342c';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(offsetX, offsetY, size * scale, size * scale);
+        
+        // Draw button image if loaded
+        if (image && image.complete && image.naturalWidth > 0) {
+            this.ctx.save();
+            this.ctx.translate(offsetX + (size * scale) / 2, offsetY + (size * scale) / 2);
+            this.ctx.scale(scale, scale);
+            this.ctx.translate(-(size / 2), -(size / 2));
+            this.ctx.drawImage(image, 0, 0, size, size);
+            this.ctx.restore();
+        } else {
+            // Fallback - draw icon as text
+            this.ctx.fillStyle = '#ffc107';
+            this.ctx.font = 'bold 24px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(fallbackText, offsetX + (size * scale) / 2, offsetY + (size * scale) / 2);
+        }
+        
+        // Draw label below button
+        this.ctx.fillStyle = '#ffc107';
+        this.ctx.font = 'bold 12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText(label, offsetX + (size * scale) / 2, offsetY + size * scale + 10);
+    }
+
     drawGrassBackground() {
         const tileSize = 32;
         const cols = Math.ceil(this.canvas.width / tileSize);
@@ -823,6 +1062,16 @@ class TowerDefenseGame {
         
         // Restore context state
         this.ctx.restore();
+        
+        // Draw pause button during gameplay
+        if (this.isRunning) {
+            this.drawPauseButton();
+        }
+        
+        // Draw pause menu if paused
+        if (this.isPaused) {
+            this.showPauseMenu();
+        }
     }
 
     updateUI() {
@@ -1235,8 +1484,70 @@ class TowerDefenseGame {
             return;
         }
         
+        // Check pause button during gameplay
+        if (this.isRunning && this.pauseButtonPos) {
+            if (clickX >= this.pauseButtonPos.left && 
+                clickX <= this.pauseButtonPos.right &&
+                clickY >= this.pauseButtonPos.top && 
+                clickY <= this.pauseButtonPos.bottom) {
+                this.pauseButtonPressed = true;
+                this.pauseButtonPressTime = Date.now();
+                this.playButtonClickSound();
+                this.togglePause();
+                return;
+            }
+        }
+        
+        // Check pause menu buttons during paused state
+        if (this.isPaused) {
+            // Check resume button
+            if (this.pauseMenuResumePos) {
+                if (clickX >= this.pauseMenuResumePos.left && 
+                    clickX <= this.pauseMenuResumePos.right &&
+                    clickY >= this.pauseMenuResumePos.top && 
+                    clickY <= this.pauseMenuResumePos.bottom) {
+                    this.pauseMenuResumePressed = true;
+                    this.pauseMenuResumePressTime = Date.now();
+                    this.playButtonClickSound();
+                    this.togglePause();
+                    return;
+                }
+            }
+            
+            // Check exit button
+            if (this.pauseMenuExitPos) {
+                if (clickX >= this.pauseMenuExitPos.left && 
+                    clickX <= this.pauseMenuExitPos.right &&
+                    clickY >= this.pauseMenuExitPos.top && 
+                    clickY <= this.pauseMenuExitPos.bottom) {
+                    this.pauseMenuExitPressed = true;
+                    this.pauseMenuExitPressTime = Date.now();
+                    this.playButtonClickSound();
+                    this.endGame();
+                    return;
+                }
+            }
+            
+            // Check mute button
+            if (this.pauseMenuMutePos) {
+                if (clickX >= this.pauseMenuMutePos.left && 
+                    clickX <= this.pauseMenuMutePos.right &&
+                    clickY >= this.pauseMenuMutePos.top && 
+                    clickY <= this.pauseMenuMutePos.bottom) {
+                    this.pauseMenuMutePressed = true;
+                    this.pauseMenuMutePressTime = Date.now();
+                    this.playButtonClickSound();
+                    this.toggleBattleMusic();
+                    return;
+                }
+            }
+            
+            // Don't allow tower placement when paused
+            return;
+        }
+        
         // Only place towers during active gameplay
-        if (this.isPaused || !this.selectedTower) return;
+        if (!this.selectedTower) return;
 
         let x = clickX / this.zoomLevel;
         let y = clickY / this.zoomLevel;
@@ -1879,6 +2190,21 @@ class TowerDefenseGame {
         
         // Play button click sound when toggling mute
         this.playButtonClickSound();
+    }
+
+    toggleBattleMusic() {
+        this.pauseMenuBattleMusicMuted = !this.pauseMenuBattleMusicMuted;
+        
+        if (this.pauseMenuBattleMusicMuted) {
+            this.battleMusic.pause();
+        } else {
+            // Resume battle music if it was playing
+            if (this.isRunning && this.battleMusic.paused) {
+                this.battleMusic.play().catch(err => {
+                    console.warn('Could not resume battle music:', err);
+                });
+            }
+        }
     }
 }
 
