@@ -53,15 +53,33 @@ class TowerDefenseGame {
         this.spawnPoint = new Image();
         this.castle = new Image();
         
-        // Define the enemy path
-        this.path = [
-            { x: 50, y: 75 },
-            { x: 150, y: 75 },
-            { x: 150, y: 150 },
-            { x: 300, y: 150 },
-            { x: 300, y: 300 },
-            { x: 550, y: 300 }
+        // Define enemy paths - 3 spawn points that merge and lead to castle
+        // Each path is an array of waypoints
+        this.paths = [
+            // Left path: bottom-left → up → right → up to castle
+            [
+                { x: 120, y: 460 },  // Spawn point (bottom-left)
+                { x: 120, y: 300 },  // Go up to horizontal road
+                { x: 320, y: 300 },  // Turn right to center
+                { x: 320, y: 80 }    // Go up to castle
+            ],
+            // Center path: bottom-center → straight up to castle
+            [
+                { x: 320, y: 460 },  // Spawn point (bottom-center)
+                { x: 320, y: 300 },  // Go up to horizontal road
+                { x: 320, y: 80 }    // Go up to castle
+            ],
+            // Right path: bottom-right → up → left → up to castle
+            [
+                { x: 520, y: 460 },  // Spawn point (bottom-right)
+                { x: 520, y: 300 },  // Go up to horizontal road
+                { x: 320, y: 300 },  // Turn left to center
+                { x: 320, y: 80 }    // Go up to castle
+            ]
         ];
+        
+        // Legacy single path (use center path for compatibility)
+        this.path = this.paths[1];
         
         // Decorative tiles - REMOVED (using procedural generation)
         this.decorations = [];
@@ -183,8 +201,8 @@ class TowerDefenseGame {
 
     init() {
         // Load tileset images
-        this.grassTile.src = '/static/img/grass-tileset.png'; // 16x16 Tiny Town grass tile
-        this.dirtPath.src = '/static/img/dirt-path.png';
+        this.grassTile.src = '/static/img/FieldsTile_38.png'; // Grass tile for background
+        this.dirtPath.src = '/static/img/Dirt.png'; // Dirt tile for paths
         this.treeRock.src = '/static/img/trees-rocks.png';
         this.bush.src = '/static/img/bush.png';
         this.spawnPoint.src = '/static/img/spawn-point.png';
@@ -384,35 +402,42 @@ class TowerDefenseGame {
     
     initializeTowerSlots() {
         this.towerSlots = [];
-        const slotSize = 40;
+        const slotSize = 32;
         
-        // Manually defined tower slot positions based on marked locations
-        // These coordinates correspond to the game world (before zoom is applied)
+        // Tower slot positions properly placed beside each road
+        // Road width is 32px, so slots are offset ~24px from road center
         const slotPositions = [
-            // Top area - around first horizontal segment 1-3
-            { x: 90, y: 32 },
-            { x: 130, y: 32 },
-            { x: 188, y: 50 },
+            // === LEFT VERTICAL ROAD (x=120) - from spawn to horizontal ===
+            { x: 88, y: 420 },    // Left side, lower
+            { x: 152, y: 420 },   // Right side, lower
+            { x: 88, y: 360 },    // Left side, upper
+            { x: 152, y: 360 },   // Right side, upper
             
-            // Upper middle area - around turn 4-6
-            { x: 110, y: 116 },
-            { x: 190, y: 110 },
-            { x: 240, y: 110 },
+            // === CENTER VERTICAL ROAD (x=320) - from spawn to horizontal ===
+            { x: 288, y: 420 },   // Left side, lower
+            { x: 352, y: 420 },   // Right side, lower
+            { x: 288, y: 360 },   // Left side, upper
+            { x: 352, y: 360 },   // Right side, upper
             
-            // Middle area - around second turn 7-9
-            { x: 300, y: 110 },
-            { x: 340, y: 150 },
-            { x: 340, y: 260 },
+            // === RIGHT VERTICAL ROAD (x=520) - from spawn to horizontal ===
+            { x: 488, y: 420 },   // Left side, lower
+            { x: 552, y: 420 },   // Right side, lower
+            { x: 488, y: 360 },   // Left side, upper
+            { x: 552, y: 360 },   // Right side, upper
             
-            // Lower middle area - around third turn 10-12
-            { x: 260, y: 190 },
-            { x: 290, y: 340 },
-            { x: 440, y: 260 },
+            // === HORIZONTAL ROAD (y=300) - left section (x=120 to x=320) ===
+            { x: 200, y: 268 },   // Above road, left
+            { x: 240, y: 268 },   // Above road, right
             
-            // Right side area - before castle 13-15
-            { x: 360, y: 340 },
-            { x: 420, y: 340 },
-            { x: 470, y: 340 }
+            // === HORIZONTAL ROAD (y=300) - right section (x=320 to x=520) ===
+            { x: 400, y: 268 },   // Above road, left
+            { x: 440, y: 268 },   // Above road, right
+            
+            // === UPPER CENTER ROAD (x=320) - from horizontal to castle ===
+            { x: 288, y: 220 },   // Left side, lower
+            { x: 352, y: 220 },   // Right side, lower
+            { x: 288, y: 170 },   // Left side, upper
+            { x: 352, y: 170 },   // Right side, upper
         ];
         
         // Create tower slots from defined positions
@@ -426,14 +451,11 @@ class TowerDefenseGame {
             });
         });
         
-        // Limit to 15 slots
-        this.towerSlots = this.towerSlots.slice(0, 15);
-        
-        console.log(`Initialized ${this.towerSlots.length} tower slots at marked positions`);
+        console.log(`Initialized ${this.towerSlots.length} tower slots for 3-road map`);
     }
     
     drawTowerSlots() {
-        const slotSize = 40;
+        const slotSize = 32;
         
         this.towerSlots.forEach((slot, index) => {
             const slotImg = this.towerSlotImage;
@@ -2099,72 +2121,182 @@ class TowerDefenseGame {
     }
 
     drawGrassBackground() {
-        const originalTileSize = 16;  // Tiny Town tileset is 16x16
-        const displayTileSize = 32;   // Scale up 2x for better visibility
-        const cols = Math.ceil(this.canvas.width / displayTileSize);
-        const rows = Math.ceil(this.canvas.height / displayTileSize);
+        // Draw grass background using the grass tile image
+        const tileSize = 32;
         
-        // Draw grass tiles from the Tiny Town tileset
         if (this.grassTile.complete && this.grassTile.naturalWidth > 0) {
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    const x = col * displayTileSize;
-                    const y = row * displayTileSize;
-                    
-                    // Draw the grass tile scaled from 16x16 to 32x32
-                    this.ctx.drawImage(
-                        this.grassTile,
-                        0, 0, originalTileSize, originalTileSize,  // Source (full 16x16 tile)
-                        x, y, displayTileSize, displayTileSize     // Destination (scaled to 32x32)
-                    );
+            // Tile the grass image across the entire canvas
+            for (let x = 0; x < this.canvas.width; x += tileSize) {
+                for (let y = 0; y < this.canvas.height; y += tileSize) {
+                    this.ctx.drawImage(this.grassTile, x, y, tileSize, tileSize);
                 }
             }
         } else {
-            // Fallback to solid green if image not loaded
-            this.ctx.fillStyle = '#4d8b2f';
+            // Fallback to gradient if image not loaded
+            const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+            gradient.addColorStop(0, '#3d6b2a');
+            gradient.addColorStop(1, '#4d8b2f');
+            this.ctx.fillStyle = gradient;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+        
+        // Draw grid overlay to help visualize tile placement (debug)
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        this.ctx.lineWidth = 1;
+        for (let x = 0; x <= this.canvas.width; x += tileSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.canvas.height);
+            this.ctx.stroke();
+        }
+        for (let y = 0; y <= this.canvas.height; y += tileSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(this.canvas.width, y);
+            this.ctx.stroke();
         }
     }
 
-    getForestNoise(x, y) {
-        // Simple seeded random for consistent forest generation
-        const seed = (x * 73856093) ^ (y * 19349663);
-        let n = Math.sin(seed) * 43758.5453;
-        return n - Math.floor(n);
+    // Placeholder for future tilemap/decoration functions
+    // These will be implemented when map images are imported
+
+    drawPath() {
+        // Draw all 3 enemy paths (roads) using dirt tile
+        const pathWidth = 32;
+        const tileSize = 32;
+        
+        // Draw each path using dirt tiles
+        this.paths.forEach((path, pathIndex) => {
+            // For each segment of the path, draw dirt tiles along it
+            for (let i = 0; i < path.length - 1; i++) {
+                const start = path[i];
+                const end = path[i + 1];
+                
+                // Calculate direction
+                const dx = end.x - start.x;
+                const dy = end.y - start.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const steps = Math.ceil(length / tileSize);
+                
+                // Draw tiles along the path segment
+                for (let step = 0; step <= steps; step++) {
+                    const t = step / steps;
+                    const x = start.x + dx * t;
+                    const y = start.y + dy * t;
+                    
+                    // Draw dirt tile centered on path
+                    if (this.dirtPath.complete && this.dirtPath.naturalWidth > 0) {
+                        this.ctx.drawImage(
+                            this.dirtPath, 
+                            x - tileSize / 2, 
+                            y - tileSize / 2, 
+                            tileSize, 
+                            tileSize
+                        );
+                    } else {
+                        // Fallback to colored rectangle
+                        this.ctx.fillStyle = '#C4A574';
+                        this.ctx.fillRect(x - tileSize / 2, y - tileSize / 2, tileSize, tileSize);
+                    }
+                }
+            }
+        });
+        
+        // Spawn point indicators are now hidden (removed)
     }
 
-    drawPixelatedTree(x, y, tileSize) {
-        const pixelSize = 4;
-        const offset = tileSize / 2;
+    drawSpawnPoint() {
+        // Spawn points are now drawn in drawPath()
+        // This function is kept for compatibility but does nothing extra
+        // The 3 spawn points are at the start of each path in this.paths
+    }
+
+    drawCastle() {
+        // Draw player's castle at top center (end point of all paths)
+        const castleX = 320;  // Center of canvas
+        const castleY = 80;   // Near top
+        const width = 64;
+        const height = 64;
         
-        // Tree trunk (brown)
-        this.ctx.fillStyle = '#5c3317';
-        this.ctx.fillRect(x + offset - pixelSize, y + offset, pixelSize * 2, pixelSize * 3);
+        // Draw castle image if loaded
+        if (this.castle.complete && this.castle.naturalWidth > 0) {
+            this.ctx.drawImage(
+                this.castle,
+                castleX - width / 2,
+                castleY - height / 2,
+                width,
+                height
+            );
+        } else {
+            // Fallback: Draw castle shadow
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            this.ctx.fillRect(castleX - width/2 + 5, castleY - height/2 + 5, width, height);
+            
+            // Main castle body (stone gray)
+            this.ctx.fillStyle = '#6D6D6D';
+            this.ctx.strokeStyle = '#4A4A4A';
+            this.ctx.lineWidth = 3;
+            this.ctx.fillRect(castleX - width/2, castleY - height/2, width, height);
+            this.ctx.strokeRect(castleX - width/2, castleY - height/2, width, height);
+            
+            // Castle roof (triangle)
+            this.ctx.fillStyle = '#8B4513';
+            this.ctx.beginPath();
+            this.ctx.moveTo(castleX - width/2 - 10, castleY - height/2);
+            this.ctx.lineTo(castleX, castleY - height/2 - 20);
+            this.ctx.lineTo(castleX + width/2 + 10, castleY - height/2);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.strokeStyle = '#5D3A1A';
+            this.ctx.stroke();
+            
+            // Castle door
+            this.ctx.fillStyle = '#4A3728';
+            this.ctx.fillRect(castleX - 10, castleY, 20, 32);
+            
+            // Castle windows
+            this.ctx.fillStyle = '#87CEEB';
+            this.ctx.fillRect(castleX - 25, castleY - 10, 12, 15);
+            this.ctx.fillRect(castleX + 13, castleY - 10, 12, 15);
+        }
         
-        // Tree canopy (dark green)
-        this.ctx.fillStyle = '#0d4d0d';
-        this.ctx.fillRect(x + offset - pixelSize * 2, y + offset - pixelSize * 2, pixelSize * 4, pixelSize * 2);
-        this.ctx.fillRect(x + offset - pixelSize * 1.5, y + offset - pixelSize * 4, pixelSize * 3, pixelSize * 2);
+        // Draw castle label - white bold pixelated style
+        this.ctx.fillStyle = '#FFFFFF';
+        this.ctx.font = 'bold 14px "Press Start 2P", "Courier New", monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        
+        // Add text shadow for better visibility
+        this.ctx.shadowColor = '#000000';
+        this.ctx.shadowBlur = 0;
+        this.ctx.shadowOffsetX = 2;
+        this.ctx.shadowOffsetY = 2;
+        this.ctx.fillText('DEFEND', castleX, castleY + height/2 + 15);
+        
+        // Reset shadow
+        this.ctx.shadowColor = 'transparent';
+        this.ctx.shadowBlur = 0;
+        this.ctx.shadowOffsetX = 0;
+        this.ctx.shadowOffsetY = 0;
     }
 
     drawInitialMap() {
-        // Draw background without zoom to prevent gaps
+        // Draw the game map (backbone structure)
+        // 1. Background layer
         this.drawGrassBackground();
         
-        // Save context state and apply zoom for game elements
+        // 2. Apply zoom transformation for game elements
         this.ctx.save();
         this.ctx.scale(this.zoomLevel, this.zoomLevel);
         
-        // Draw path with dirt tiles
-        this.drawDirtPath();
+        // 3. Path layer (where enemies walk)
+        this.drawPath();
         
-        // Draw spawn point at path start
-        this.drawSpawnPoint();
+        // 4. Key landmarks
+        this.drawSpawnPoint();  // Enemy spawn location
+        this.drawCastle();      // Player base to defend
         
-        // Draw castle at path end
-        this.drawCastle();
-        
-        // Restore context state
+        // 5. Restore context
         this.ctx.restore();
     }
 
@@ -2250,22 +2382,25 @@ class TowerDefenseGame {
     }
 
     draw() {
-        // Disable image smoothing
+        // Disable image smoothing for pixel-perfect rendering
         this.ctx.imageSmoothingEnabled = false;
         
-        // Draw background without zoom
+        // === MAP RENDERING (Backbone) ===
+        // Layer 1: Background
         this.drawGrassBackground();
         
-        // Save context state and apply zoom for game elements
+        // Layer 2: Apply zoom transformation
         this.ctx.save();
         this.ctx.scale(this.zoomLevel, this.zoomLevel);
         
-        // Draw path with dirt tiles
-        this.drawDirtPath();
+        // Layer 3: Path
+        this.drawPath();
+        
+        // Layer 4: Landmarks
         this.drawSpawnPoint();
         this.drawCastle();
         
-        // Draw tower slots
+        // Layer 5: Interactive elements
         this.drawTowerSlots();
 
         // Draw towers
@@ -2562,78 +2697,6 @@ class TowerDefenseGame {
 
         console.log('Game restarted - ready for new session');
         this.lobbyLoop(); // Restart lobby animation and music
-    }
-
-    drawTowerSlots() {
-        const slotSize = 40;
-        
-        this.towerSlots.forEach((slot, index) => {
-            const slotImg = this.towerSlotImage;
-            
-            // Draw slot image if loaded
-            if (slotImg && slotImg.complete && slotImg.naturalWidth > 0) {
-                this.ctx.drawImage(slotImg, slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
-            } else {
-                // Fallback - draw as a simple square with border
-                const occupied = slot.occupied;
-                this.ctx.fillStyle = occupied ? 'rgba(100, 100, 100, 0.7)' : 'rgba(200, 200, 150, 0.6)';
-                this.ctx.fillRect(slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
-                
-                this.ctx.strokeStyle = occupied ? '#666666' : '#999900';
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeRect(slot.x - slotSize / 2, slot.y - slotSize / 2, slotSize, slotSize);
-            }
-            
-            // Display slot number only if unoccupied
-            if (!slot.occupied) {
-                this.ctx.fillStyle = '#ffffff';
-                this.ctx.font = 'bold 14px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText((index + 1).toString(), slot.x, slot.y);
-            }
-        });
-    }
-
-    drawDirtPath() {
-        this.ctx.strokeStyle = '#8b7355';
-        this.ctx.lineWidth = 50;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.path[0].x, this.path[0].y);
-        for (let i = 1; i < this.path.length; i++) {
-            this.ctx.lineTo(this.path[i].x, this.path[i].y);
-        }
-        this.ctx.stroke();
-    }
-
-    drawSpawnPoint() {
-        const spawnX = this.path[0].x;
-        const spawnY = this.path[0].y;
-        
-        if (this.spawnPoint.complete && this.spawnPoint.naturalWidth > 0) {
-            this.ctx.drawImage(this.spawnPoint, spawnX - 25, spawnY - 25, 50, 50);
-        } else {
-            this.ctx.fillStyle = '#4caf50';
-            this.ctx.beginPath();
-            this.ctx.arc(spawnX, spawnY, 10, 0, Math.PI * 2);
-            this.ctx.fill();
-        }
-    }
-
-    drawCastle() {
-        const castleX = this.path[this.path.length - 1].x;
-        const castleY = this.path[this.path.length - 1].y;
-        
-        if (this.castle.complete && this.castle.naturalWidth > 0) {
-            this.ctx.drawImage(this.castle, castleX - 35, castleY - 35, 70, 70);
-        } else {
-            this.ctx.fillStyle = '#f44336';
-            this.ctx.fillRect(castleX - 20, castleY - 20, 40, 40);
-            this.ctx.fillRect(castleX - 25, castleY - 25, 10, 10);
-            this.ctx.fillRect(castleX + 15, castleY - 25, 10, 10);
-        }
     }
 
     loadWavesAndEnemies() {
@@ -3179,15 +3242,20 @@ class TowerDefenseGame {
                this.waveEnemySpawnQueue[0].spawnTime <= elapsedTime) {
             const we = this.waveEnemySpawnQueue.shift();
             
+            // Randomly choose one of the 3 paths for this enemy
+            const pathIndex = Math.floor(Math.random() * this.paths.length);
+            const chosenPath = this.paths[pathIndex];
+            
             // Add slight random offset to prevent stacking
-            const offsetX = (Math.random() - 0.5) * 30;
-            const offsetY = (Math.random() - 0.5) * 30;
+            const offsetX = (Math.random() - 0.5) * 20;
+            const offsetY = (Math.random() - 0.5) * 20;
             
             this.enemies.push({
-                x: this.path[0].x + offsetX,
-                y: this.path[0].y + offsetY,
+                x: chosenPath[0].x + offsetX,
+                y: chosenPath[0].y + offsetY,
                 radius: 8,
                 pathProgress: 0,
+                pathIndex: pathIndex,  // Track which path this enemy follows
                 hp: we.base_hp,
                 maxHp: we.base_hp,
                 speed: we.speed,
@@ -3204,13 +3272,16 @@ class TowerDefenseGame {
             const speedMultiplier = this.gameplaySpeedMultiplier || 1.0;
             enemy.pathProgress += 0.3 * (enemy.speed || 1) * speedMultiplier;
             
-            if (enemy.pathProgress >= this.getPathLength()) {
+            // Get the path this enemy is following
+            const enemyPath = this.paths[enemy.pathIndex] || this.paths[1];
+            
+            if (enemy.pathProgress >= this.getPathLengthForPath(enemyPath)) {
                 enemy.alive = false;
                 this.enemies.splice(i, 1);
                 this.playerLives--;
                 if (this.playerLives <= 0) this.endGame();
             } else {
-                const pos = this.getPositionOnPath(enemy.pathProgress);
+                const pos = this.getPositionOnPathForPath(enemy.pathProgress, enemyPath);
                 enemy.x = pos.x;
                 enemy.y = pos.y;
             }
@@ -3353,32 +3424,42 @@ class TowerDefenseGame {
     }
 
     getPathLength() {
+        // Legacy function - returns length of center path
+        return this.getPathLengthForPath(this.path);
+    }
+    
+    getPathLengthForPath(path) {
         let length = 0;
-        for (let i = 0; i < this.path.length - 1; i++) {
-            const dx = this.path[i + 1].x - this.path[i].x;
-            const dy = this.path[i + 1].y - this.path[i].y;
+        for (let i = 0; i < path.length - 1; i++) {
+            const dx = path[i + 1].x - path[i].x;
+            const dy = path[i + 1].y - path[i].y;
             length += Math.hypot(dx, dy);
         }
         return length;
     }
 
     getPositionOnPath(distance) {
+        // Legacy function - returns position on center path
+        return this.getPositionOnPathForPath(distance, this.path);
+    }
+    
+    getPositionOnPathForPath(distance, path) {
         let currentDist = 0;
-        for (let i = 0; i < this.path.length - 1; i++) {
-            const dx = this.path[i + 1].x - this.path[i].x;
-            const dy = this.path[i + 1].y - this.path[i].y;
+        for (let i = 0; i < path.length - 1; i++) {
+            const dx = path[i + 1].x - path[i].x;
+            const dy = path[i + 1].y - path[i].y;
             const segmentLength = Math.hypot(dx, dy);
             
             if (currentDist + segmentLength >= distance) {
                 const ratio = (distance - currentDist) / segmentLength;
                 return {
-                    x: this.path[i].x + dx * ratio,
-                    y: this.path[i].y + dy * ratio
+                    x: path[i].x + dx * ratio,
+                    y: path[i].y + dy * ratio
                 };
             }
             currentDist += segmentLength;
         }
-        return this.path[this.path.length - 1];
+        return path[path.length - 1];
     }
 
     showLeaderboardModal() {
