@@ -173,6 +173,11 @@ class TowerDefenseGame {
         this.hitGoblinSound = new Audio();
         this.musicStarted = false; // Track if music has started
         
+        // Tab visibility tracking
+        this.isTabVisible = true;
+        this.tabHiddenTime = null; // When tab was hidden
+        this.lastFrameTime = Date.now(); // Track last frame time for delta time
+        
         this.init();
     }
 
@@ -366,6 +371,9 @@ class TowerDefenseGame {
             this.canvas.addEventListener('click', (e) => this.placeOnCanvas(e));
         }
         
+        // Set up visibility change detection
+        this.setupVisibilityHandling();
+        
         // Load waves and tower images on init
         this.loadWavesAndEnemies();
         this.loadTowerImages();
@@ -460,6 +468,69 @@ class TowerDefenseGame {
         
         this.drawLobbyScreen();
         requestAnimationFrame(() => this.lobbyLoop());
+    }
+
+    setupVisibilityHandling() {
+        // Detect when tab/window becomes visible or hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Tab is now hidden
+                this.isTabVisible = false;
+                this.tabHiddenTime = Date.now();
+                
+                // Auto-pause the game if it's running
+                if (this.isRunning && !this.isPaused) {
+                    this.togglePause();
+                }
+            } else {
+                // Tab is now visible
+                this.isTabVisible = true;
+                
+                // Reset frame time to prevent delta time spike
+                this.lastFrameTime = Date.now();
+                
+                // If wave start time was set, update it to account for hidden time
+                if (this.waveStartTime) {
+                    const hiddenDuration = Date.now() - this.tabHiddenTime;
+                    this.waveStartTime += hiddenDuration;
+                }
+                
+                // If countdown was active, update its start time
+                if (this.countdownActive && this.countdownStartTime) {
+                    const hiddenDuration = Date.now() - this.tabHiddenTime;
+                    this.countdownStartTime += hiddenDuration;
+                }
+            }
+        });
+        
+        // Also handle focus/blur events for additional compatibility
+        window.addEventListener('blur', () => {
+            this.isTabVisible = false;
+            this.tabHiddenTime = Date.now();
+            
+            if (this.isRunning && !this.isPaused) {
+                this.togglePause();
+            }
+        });
+        
+        window.addEventListener('focus', () => {
+            this.isTabVisible = true;
+            
+            // Reset frame time
+            this.lastFrameTime = Date.now();
+            
+            // Adjust wave start time
+            if (this.waveStartTime) {
+                const hiddenDuration = Date.now() - this.tabHiddenTime;
+                this.waveStartTime += hiddenDuration;
+            }
+            
+            // Adjust countdown time
+            if (this.countdownActive && this.countdownStartTime) {
+                const hiddenDuration = Date.now() - this.tabHiddenTime;
+                this.countdownStartTime += hiddenDuration;
+            }
+        });
     }
 
     drawLobbyScreen() {
