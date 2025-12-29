@@ -157,6 +157,7 @@ class TowerDefenseGame {
         this.showBuffModalState = false;
         this.showAdConfirmModalState = false; // Confirmation dialog before watching ad
         this.showAdVideoModalState = false; // Video ad modal
+        this.buffSelected = false; // Track if a buff has been selected (prevent spam clicking)
         this.adModalStartTime = null;
         this.adModalDuration = 5000; // 5 seconds
         this.adVideoDuration = 20000; // 20 seconds for video ad
@@ -1264,6 +1265,9 @@ class TowerDefenseGame {
     }
 
     showBuffSelectionModalCanvas() {
+        // Reset buff selection flag for this modal
+        this.buffSelected = false;
+        
         // Draw semi-transparent overlay
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -2948,17 +2952,21 @@ class TowerDefenseGame {
         
         // Check buff selection modal (canvas-based)
         if (this.showBuffModalState && this.buffCardPositions && this.buffCardPositions.length > 0) {
-            for (let buffCard of this.buffCardPositions) {
-                if (clickX >= buffCard.left && 
-                    clickX <= buffCard.right &&
-                    clickY >= buffCard.top && 
-                    clickY <= buffCard.bottom) {
-                    this.playButtonClickSound();
-                    // Call AdBuffManager's selectBuff method
-                    if (window.adBuffManager) {
-                        window.adBuffManager.selectBuff(buffCard.buffType);
+            // Only allow buff selection if a buff hasn't been selected yet
+            if (!this.buffSelected) {
+                for (let buffCard of this.buffCardPositions) {
+                    if (clickX >= buffCard.left && 
+                        clickX <= buffCard.right &&
+                        clickY >= buffCard.top && 
+                        clickY <= buffCard.bottom) {
+                        this.playButtonClickSound();
+                        this.buffSelected = true; // Prevent further clicks
+                        // Call AdBuffManager's selectBuff method
+                        if (window.adBuffManager) {
+                            window.adBuffManager.selectBuff(buffCard.buffType);
+                        }
+                        return;
                     }
-                    return;
                 }
             }
             // Don't allow other interactions when buff modal is showing
