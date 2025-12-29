@@ -2391,9 +2391,9 @@ class TowerDefenseGame {
         this.towers.forEach(tower => {
             // Try to draw tower image first
             const towerImg = this.towerImages[tower.tower_id];
-            const towerSize = 32; // Match slot size
+            const towerSize = 48; // Slightly larger than slot for better visibility
             if (towerImg && towerImg.complete) {
-                this.ctx.drawImage(towerImg, tower.x - towerSize / 2, tower.y - towerSize / 2, towerSize, towerSize);
+                this.ctx.drawImage(towerImg, tower.x - towerSize / 2, tower.y - towerSize / 2 - 8, towerSize, towerSize);
             } else {
                 // Fallback to circle if image not loaded
                 this.ctx.fillStyle = '#667eea';
