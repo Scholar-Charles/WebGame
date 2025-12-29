@@ -1,4 +1,4 @@
-# Tower Defense Game - Current Features 🎮
+# Tower Defense Game - Current Features
 
 ## Game Features Overview
 
@@ -7,7 +7,7 @@ This document outlines all currently implemented and working features in the Tow
 Tower Defense V 1.0.0
 ---
 
-## ✅ Core Gameplay Features
+## Core Gameplay Features
 
 ### 1. **Tower System**
 - ✅ Multiple tower types available
