@@ -1073,24 +1073,19 @@ class TowerDefenseGame {
         const panelX = this.canvas.width - panelWidth - 10;
         const panelY = 60; // Below pause button
         
-        // Draw leather background with gradient - darker with reduced opacity
-        const gradient = this.ctx.createLinearGradient(panelX, panelY, panelX, panelY + panelHeight);
-        gradient.addColorStop(0, 'rgba(40, 25, 15, 0.65)');
-        gradient.addColorStop(0.5, 'rgba(50, 30, 20, 0.65)');
-        gradient.addColorStop(1, 'rgba(40, 25, 15, 0.65)');
-        this.ctx.fillStyle = gradient;
+        // Draw dark interior background
+        this.ctx.fillStyle = 'rgba(30, 25, 20, 0.85)';
         this.ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
         
-        // Add scanline overlay effect
-        for (let i = 0; i < panelHeight; i += 4) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-            this.ctx.fillRect(panelX, panelY + i, panelWidth, 2);
-        }
-        
-        // Add border
-        this.ctx.strokeStyle = '#4a342c';
-        this.ctx.lineWidth = 2;
+        // Draw light wooden border (outer)
+        this.ctx.strokeStyle = '#D4A574';
+        this.ctx.lineWidth = 3;
         this.ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+        
+        // Draw inner border highlight
+        this.ctx.strokeStyle = '#E8C89E';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(panelX + 2, panelY + 2, panelWidth - 4, panelHeight - 4);
         
         // Draw title - Wave number
         this.ctx.fillStyle = '#ffc107';
@@ -1100,7 +1095,7 @@ class TowerDefenseGame {
         this.ctx.fillText(titleText, panelX + panelWidth / 2, panelY + padding + 2);
         
         // Draw divider line
-        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.strokeStyle = '#D4A574';
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
         this.ctx.moveTo(panelX + 4, panelY + padding + 18);
@@ -1146,24 +1141,19 @@ class TowerDefenseGame {
         const buttonSpacing = 25;
         const padding = 15;
         
-        // Draw leather background with gradient
-        const gradient = this.ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuHeight);
-        gradient.addColorStop(0, '#5c4033');
-        gradient.addColorStop(0.5, '#6d4c41');
-        gradient.addColorStop(1, '#5c4033');
-        this.ctx.fillStyle = gradient;
+        // Draw dark interior background
+        this.ctx.fillStyle = 'rgba(35, 30, 25, 0.95)';
         this.ctx.fillRect(menuX, menuY, menuWidth, menuHeight);
         
-        // Add scanline overlay effect
-        for (let i = 0; i < menuHeight; i += 4) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            this.ctx.fillRect(menuX, menuY + i, menuWidth, 2);
-        }
-        
-        // Add border and inset shadow
-        this.ctx.strokeStyle = '#4a342c';
-        this.ctx.lineWidth = 3;
+        // Draw light wooden border (outer)
+        this.ctx.strokeStyle = '#D4A574';
+        this.ctx.lineWidth = 4;
         this.ctx.strokeRect(menuX, menuY, menuWidth, menuHeight);
+        
+        // Draw inner border highlight
+        this.ctx.strokeStyle = '#E8C89E';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(menuX + 3, menuY + 3, menuWidth - 6, menuHeight - 6);
         
         // Draw title
         this.ctx.fillStyle = '#ffc107';
@@ -1173,7 +1163,7 @@ class TowerDefenseGame {
         this.ctx.fillText('PAUSED', this.canvas.width / 2, menuY + padding);
         
         // Draw divider line
-        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.strokeStyle = '#D4A574';
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
         this.ctx.moveTo(menuX + padding, menuY + 45);
@@ -1774,26 +1764,21 @@ class TowerDefenseGame {
         const panelHeight = 56;
         
         const panelX = padding;
-        const panelY = this.canvas.height - panelHeight - padding;
+        const panelY = padding; // Top left position
         
-        // Draw leather background panel with gradient - reduced opacity
-        const gradient = this.ctx.createLinearGradient(panelX, panelY, panelX, panelY + panelHeight);
-        gradient.addColorStop(0, 'rgba(92, 64, 51, 0.55)');
-        gradient.addColorStop(0.5, 'rgba(109, 76, 65, 0.55)');
-        gradient.addColorStop(1, 'rgba(92, 64, 51, 0.55)');
-        this.ctx.fillStyle = gradient;
+        // Draw dark interior background
+        this.ctx.fillStyle = 'rgba(30, 25, 20, 0.85)';
         this.ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
         
-        // Add scanline overlay effect
-        for (let i = 0; i < panelHeight; i += 3) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            this.ctx.fillRect(panelX, panelY + i, panelWidth, 1);
-        }
-        
-        // Add border
-        this.ctx.strokeStyle = '#4a342c';
-        this.ctx.lineWidth = 1;
+        // Draw light wooden border (outer)
+        this.ctx.strokeStyle = '#D4A574';
+        this.ctx.lineWidth = 2;
         this.ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+        
+        // Draw inner border highlight
+        this.ctx.strokeStyle = '#E8C89E';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(panelX + 1, panelY + 1, panelWidth - 2, panelHeight - 2);
         
         // Draw gold display (top)
         const goldX = panelX + panelPadding;
@@ -1820,7 +1805,7 @@ class TowerDefenseGame {
         
         // Draw separator line
         const separatorY = panelY + panelHeight / 2;
-        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.strokeStyle = '#D4A574';
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
         this.ctx.moveTo(panelX + 4, separatorY);
@@ -1981,24 +1966,19 @@ class TowerDefenseGame {
         const buttonSize = 30;
         const closeButtonPadding = 6;
         
-        // Draw menu background with leather style
-        const gradient = this.ctx.createLinearGradient(menuX, menuY, menuX, menuY + menuHeight);
-        gradient.addColorStop(0, '#5c4033');
-        gradient.addColorStop(0.5, '#6d4c41');
-        gradient.addColorStop(1, '#5c4033');
-        this.ctx.fillStyle = gradient;
+        // Draw dark interior background
+        this.ctx.fillStyle = 'rgba(35, 30, 25, 0.95)';
         this.ctx.fillRect(menuX, menuY, menuWidth, menuHeight);
         
-        // Add scanline overlay effect
-        for (let i = 0; i < menuHeight; i += 4) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            this.ctx.fillRect(menuX, menuY + i, menuWidth, 2);
-        }
-        
-        // Add border
-        this.ctx.strokeStyle = '#4a342c';
-        this.ctx.lineWidth = 3;
+        // Draw light wooden border (outer)
+        this.ctx.strokeStyle = '#D4A574';
+        this.ctx.lineWidth = 4;
         this.ctx.strokeRect(menuX, menuY, menuWidth, menuHeight);
+        
+        // Draw inner border highlight
+        this.ctx.strokeStyle = '#E8C89E';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(menuX + 3, menuY + 3, menuWidth - 6, menuHeight - 6);
         
         // Draw title
         this.ctx.fillStyle = '#ffc107';
@@ -2008,7 +1988,7 @@ class TowerDefenseGame {
         this.ctx.fillText('BUILD TOWER', this.canvas.width / 2, menuY + padding);
         
         // Draw divider line
-        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.strokeStyle = '#D4A574';
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
         this.ctx.moveTo(menuX + padding, menuY + 45);
