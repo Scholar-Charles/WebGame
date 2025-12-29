@@ -1298,14 +1298,15 @@ class TowerDefenseGame {
     }
 
     drawWatchAdButton() {
-        const buttonSize = 60;
+        const buttonSize = 50;
         const padding = 10;
-        const buttonX = padding; // Bottom left corner
+        // Position to the left of the building button
+        const buildingButtonX = this.canvas.width - 50 - padding;
+        const buttonX = buildingButtonX - buttonSize - padding; // Left of building button
         const buttonY = this.canvas.height - buttonSize - padding;
         
-        // Update glow intensity for pulsing effect
-        const glowSpeed = 0.01; // Adjust for faster/slower pulsing
-        this.watchAdGlowIntensity = (Math.sin(Date.now() * glowSpeed) + 1) / 2; // 0 to 1
+        // Calculate pulsing effect (dimming in and out)
+        const pulseOpacity = (Math.sin(Date.now() * 0.003) + 1) / 2; // 0 to 1
         
         // Calculate animation offset
         let offsetX = buttonX;
@@ -1321,43 +1322,24 @@ class TowerDefenseGame {
             }
         }
         
-        // Draw glowing background (pulsing glow effect)
-        const glowRadius = buttonSize / 2 + (this.watchAdGlowIntensity * 10);
-        const glowGradient = this.ctx.createRadialGradient(offsetX + buttonSize / 2, offsetY + buttonSize / 2, buttonSize / 2, offsetX + buttonSize / 2, offsetY + buttonSize / 2, glowRadius);
-        glowGradient.addColorStop(0, `rgba(255, 0, 255, ${this.watchAdGlowIntensity * 0.6})`); // Magenta/Pink glow
-        glowGradient.addColorStop(1, 'rgba(255, 0, 255, 0)');
-        this.ctx.fillStyle = glowGradient;
-        this.ctx.fillRect(offsetX - 10, offsetY - 10, buttonSize + 20, buttonSize + 20);
-        
-        // Draw button background with leather texture
-        const gradient = this.ctx.createLinearGradient(offsetX, offsetY, offsetX, offsetY + buttonSize);
-        gradient.addColorStop(0, '#ff1493');
-        gradient.addColorStop(0.5, '#ff69b4');
-        gradient.addColorStop(1, '#ff1493');
-        this.ctx.fillStyle = gradient;
-        this.ctx.fillRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
-        
-        // Add inner highlight
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        this.ctx.fillRect(offsetX + 2, offsetY + 2, (buttonSize - 4) * scale, (buttonSize - 4) * scale * 0.3);
-        
-        // Button border
-        this.ctx.strokeStyle = '#ff0080';
-        this.ctx.lineWidth = 3;
-        this.ctx.strokeRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
+        // Apply pulsing opacity to button (dims in and out)
+        this.ctx.globalAlpha = 0.7 + (pulseOpacity * 0.3); // Oscillates between 0.7 and 1.0
         
         // Draw watch ad image if loaded
         if (this.watchAdButtonImage.complete && this.watchAdButtonImage.naturalWidth > 0) {
-            this.ctx.drawImage(this.watchAdButtonImage, offsetX + 5, offsetY + 5, (buttonSize - 10) * scale, (buttonSize - 10) * scale);
+            this.ctx.drawImage(this.watchAdButtonImage, offsetX, offsetY, buttonSize * scale, buttonSize * scale);
         } else {
             // Fallback - draw text
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.font = 'bold 12px Arial';
+            this.ctx.font = 'bold 10px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            this.ctx.fillText('WATCH', offsetX + buttonSize / 2, offsetY + buttonSize / 2 - 8);
-            this.ctx.fillText('AD', offsetX + buttonSize / 2, offsetY + buttonSize / 2 + 8);
+            this.ctx.fillText('WATCH', offsetX + buttonSize / 2, offsetY + buttonSize / 2 - 6);
+            this.ctx.fillText('AD', offsetX + buttonSize / 2, offsetY + buttonSize / 2 + 6);
         }
+        
+        // Reset alpha
+        this.ctx.globalAlpha = 1;
         
         // Store button position for click detection
         this.watchAdButtonPos = {
