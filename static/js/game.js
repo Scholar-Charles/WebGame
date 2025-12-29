@@ -156,8 +156,11 @@ class TowerDefenseGame {
         this.showAdModalState = false;
         this.showBuffModalState = false;
         this.showAdConfirmModalState = false; // Confirmation dialog before watching ad
+        this.showAdVideoModalState = false; // Video ad modal
         this.adModalStartTime = null;
         this.adModalDuration = 5000; // 5 seconds
+        this.adVideoDuration = 20000; // 20 seconds for video ad
+        this.adVideoUrl = 'https://www.youtube.com/embed/dQw4w9WgXcQ'; // Placeholder video URL - change to your ad
         
         // Audio elements
         this.lobbyMusic = new Audio();
@@ -1298,11 +1301,6 @@ class TowerDefenseGame {
         this.ctx.textBaseline = 'top';
         this.ctx.fillText('CHOOSE YOUR BUFF', this.canvas.width / 2, modalY + padding + 3);
         
-        // Draw subtitle
-        this.ctx.fillStyle = '#87ceeb';
-        this.ctx.font = '10px Arial';
-        this.ctx.fillText('Select one buff (60s)', this.canvas.width / 2, modalY + padding + 22);
-        
         // Draw divider line
         this.ctx.strokeStyle = '#c9a961';
         this.ctx.lineWidth = 2;
@@ -1392,11 +1390,7 @@ class TowerDefenseGame {
             });
         });
         
-        // Draw info text
-        this.ctx.font = '9px Arial';
-        this.ctx.fillStyle = '#87ceeb';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('💡 More ads = more buffs', this.canvas.width / 2, modalY + modalHeight - 6);
+      
     }
 
     /**
@@ -1515,6 +1509,144 @@ class TowerDefenseGame {
             right: noButtonX + buttonWidth,
             bottom: buttonY + buttonHeight
         };
+    }
+
+    /**
+     * Show video ad modal with countdown (20 seconds)
+     */
+    showAdVideoModalCanvas() {
+        // Draw semi-transparent overlay
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Modal dimensions
+        const modalWidth = 500;
+        const modalHeight = 350;
+        const modalX = (this.canvas.width - modalWidth) / 2;
+        const modalY = (this.canvas.height - modalHeight) / 2;
+        const padding = 15;
+        const borderWidth = 3;
+        
+        // Draw wood-style border (light)
+        const borderGradient = this.ctx.createLinearGradient(modalX, modalY, modalX, modalY + modalHeight);
+        borderGradient.addColorStop(0, '#c9a961');
+        borderGradient.addColorStop(0.5, '#b8956f');
+        borderGradient.addColorStop(1, '#a0754d');
+        this.ctx.fillStyle = borderGradient;
+        this.ctx.fillRect(modalX, modalY, modalWidth, modalHeight);
+        
+        // Draw darker wood inside
+        const innerGradient = this.ctx.createLinearGradient(modalX + borderWidth, modalY + borderWidth, modalX + borderWidth, modalY + modalHeight - borderWidth);
+        innerGradient.addColorStop(0, '#4a3728');
+        innerGradient.addColorStop(0.5, '#3d2f23');
+        innerGradient.addColorStop(1, '#2d1f18');
+        this.ctx.fillStyle = innerGradient;
+        this.ctx.fillRect(modalX + borderWidth, modalY + borderWidth, modalWidth - borderWidth * 2, modalHeight - borderWidth * 2);
+        
+        // Calculate remaining time
+        const elapsedTime = Date.now() - this.adModalStartTime;
+        const remainingTime = Math.max(0, Math.ceil((this.adVideoDuration - elapsedTime) / 1000));
+        const canSkip = elapsedTime >= 10000; // Can skip after 10 seconds
+        
+        // Draw title
+        this.ctx.fillStyle = '#ffc107';
+        this.ctx.font = 'bold 18px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText('ADVERTISEMENT', this.canvas.width / 2, modalY + padding + 5);
+        
+        // Draw divider line
+        this.ctx.strokeStyle = '#c9a961';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(modalX + padding, modalY + padding + 30);
+        this.ctx.lineTo(modalX + modalWidth - padding, modalY + padding + 30);
+        this.ctx.stroke();
+        
+        // Draw video placeholder (since we can't embed actual video in canvas)
+        const videoX = modalX + padding + 10;
+        const videoY = modalY + padding + 45;
+        const videoWidth = modalWidth - (padding + 10) * 2;
+        const videoHeight = 150;
+        
+        // Video background
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(videoX, videoY, videoWidth, videoHeight);
+        this.ctx.strokeStyle = '#8b7355';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(videoX, videoY, videoWidth, videoHeight);
+        
+        // Play icon in center
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.moveTo(videoX + videoWidth / 2 - 15, videoY + videoHeight / 2 - 20);
+        this.ctx.lineTo(videoX + videoWidth / 2 - 15, videoY + videoHeight / 2 + 20);
+        this.ctx.lineTo(videoX + videoWidth / 2 + 15, videoY + videoHeight / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        
+        // Draw countdown timer
+        this.ctx.fillStyle = '#ff6b6b';
+        this.ctx.font = 'bold 24px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(remainingTime + 's', modalX + modalWidth - 40, modalY + 25);
+        
+        // Draw skip button area and message
+        const buttonY = modalY + modalHeight - 50;
+        
+        if (canSkip) {
+            // Draw SKIP button
+            const buttonWidth = 100;
+            const buttonHeight = 30;
+            const buttonX = modalX + (modalWidth - buttonWidth) / 2;
+            
+            const skipGradient = this.ctx.createLinearGradient(buttonX, buttonY, buttonX, buttonY + buttonHeight);
+            skipGradient.addColorStop(0, '#4CAF50');
+            skipGradient.addColorStop(1, '#388E3C');
+            this.ctx.fillStyle = skipGradient;
+            this.ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+            this.ctx.strokeStyle = '#2E7D32';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(buttonX, buttonY, buttonWidth, buttonHeight);
+            
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('SKIP', buttonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+            
+            // Store skip button position
+            this.adVideoSkipPos = {
+                left: buttonX,
+                top: buttonY,
+                right: buttonX + buttonWidth,
+                bottom: buttonY + buttonHeight
+            };
+        } else {
+            // Show wait message
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('Please wait... Skip button appears soon', modalX + modalWidth / 2, buttonY + 15);
+        }
+        
+        // Auto-close when timer reaches 0
+        if (remainingTime <= 0) {
+            this.closeAdVideoModal();
+        }
+    }
+
+    /**
+     * Close the ad video modal and proceed to buff selection
+     */
+    closeAdVideoModal() {
+        this.showAdVideoModalState = false;
+        this.showBuffModalState = true;
+        // Record ad watch via AdBuffManager
+        if (window.adBuffManager) {
+            window.adBuffManager.completeAdWatch();
+        }
     }
 
     /**
@@ -2190,6 +2322,11 @@ class TowerDefenseGame {
             this.showAdConfirmModalCanvas();
         }
         
+        // Draw canvas-based video ad modal if active
+        if (this.showAdVideoModalState) {
+            this.showAdVideoModalCanvas();
+        }
+        
         // Draw canvas-based ad modal if active
         if (this.showAdModalState) {
             this.showAdModalCanvas();
@@ -2740,7 +2877,9 @@ class TowerDefenseGame {
                     clickY <= this.adConfirmYesPos.bottom) {
                     this.playButtonClickSound();
                     this.showAdConfirmModalState = false; // Close confirmation
-                    this.openAdModalCanvas(); // Open ad modal
+                    // Open video ad modal instead of text ad
+                    this.showAdVideoModalState = true;
+                    this.adModalStartTime = Date.now();
                     return;
                 }
             }
@@ -2758,6 +2897,24 @@ class TowerDefenseGame {
             }
             
             // Don't allow other interactions when confirmation modal is showing
+            return;
+        }
+        
+        // Check ad video modal (canvas-based)
+        if (this.showAdVideoModalState) {
+            // Check SKIP button (only clickable after 5 seconds)
+            if (this.adVideoSkipPos) {
+                if (clickX >= this.adVideoSkipPos.left && 
+                    clickX <= this.adVideoSkipPos.right &&
+                    clickY >= this.adVideoSkipPos.top && 
+                    clickY <= this.adVideoSkipPos.bottom) {
+                    this.playButtonClickSound();
+                    this.closeAdVideoModal();
+                    return;
+                }
+            }
+            
+            // Don't allow other interactions when video ad is showing
             return;
         }
         
