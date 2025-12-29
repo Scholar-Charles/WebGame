@@ -152,6 +152,12 @@ class TowerDefenseGame {
         this.gameMessageTime = 0;
         this.gameMessageDuration = 2000; // 2 seconds
         
+        // Canvas-based modals state
+        this.showAdModalState = false;
+        this.showBuffModalState = false;
+        this.adModalStartTime = null;
+        this.adModalDuration = 5000; // 5 seconds
+        
         // Audio elements
         this.lobbyMusic = new Audio();
         this.battleMusic = new Audio();
@@ -1172,6 +1178,249 @@ class TowerDefenseGame {
         this.ctx.fillText(label, offsetX + (size * scale) / 2, offsetY + size * scale + 10);
     }
 
+    // ========================================
+    // CANVAS-BASED AD & BUFF MODAL METHODS
+    // ========================================
+
+    showAdModalCanvas() {
+        // Draw semi-transparent overlay
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Modal dimensions
+        const modalWidth = 380;
+        const modalHeight = 260;
+        const modalX = (this.canvas.width - modalWidth) / 2;
+        const modalY = (this.canvas.height - modalHeight) / 2;
+        const padding = 15;
+        const borderWidth = 3;
+        
+        // Draw wood-style border (light)
+        const borderGradient = this.ctx.createLinearGradient(modalX, modalY, modalX, modalY + modalHeight);
+        borderGradient.addColorStop(0, '#c9a961');
+        borderGradient.addColorStop(0.5, '#b8956f');
+        borderGradient.addColorStop(1, '#a0754d');
+        this.ctx.fillStyle = borderGradient;
+        this.ctx.fillRect(modalX, modalY, modalWidth, modalHeight);
+        
+        // Draw darker wood inside
+        const innerGradient = this.ctx.createLinearGradient(modalX + borderWidth, modalY + borderWidth, modalX + borderWidth, modalY + modalHeight - borderWidth);
+        innerGradient.addColorStop(0, '#4a3728');
+        innerGradient.addColorStop(0.5, '#3d2f23');
+        innerGradient.addColorStop(1, '#2d1f18');
+        this.ctx.fillStyle = innerGradient;
+        this.ctx.fillRect(modalX + borderWidth, modalY + borderWidth, modalWidth - borderWidth * 2, modalHeight - borderWidth * 2);
+        
+        // Draw title
+        this.ctx.fillStyle = '#ffc107';
+        this.ctx.font = 'bold 20px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText('WATCH AD FOR BUFF', this.canvas.width / 2, modalY + padding + 5);
+        
+        // Draw divider line
+        this.ctx.strokeStyle = '#c9a961';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(modalX + padding, modalY + padding + 30);
+        this.ctx.lineTo(modalX + modalWidth - padding, modalY + padding + 30);
+        this.ctx.stroke();
+        
+        // Draw content area text
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('Loading Advertisement...', this.canvas.width / 2, modalY + modalHeight / 2 - 30);
+        
+        // Draw loading spinner (simple circle animation)
+        const spinnerSize = 30;
+        const spinnerX = this.canvas.width / 2;
+        const spinnerY = modalY + modalHeight / 2 + 20;
+        const rotation = (Date.now() / 20) % 360;
+        
+        this.ctx.save();
+        this.ctx.translate(spinnerX, spinnerY);
+        this.ctx.rotate(rotation * Math.PI / 180);
+        this.ctx.strokeStyle = '#ffc107';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, spinnerSize, 0, Math.PI * 1.5);
+        this.ctx.stroke();
+        this.ctx.restore();
+        
+        // Store modal position for click detection (close button)
+        this.adModalClosePos = {
+            left: modalX + modalWidth - 40,
+            top: modalY + 15,
+            right: modalX + modalWidth - 15,
+            bottom: modalY + 40
+        };
+    }
+
+    showBuffSelectionModalCanvas() {
+        // Draw semi-transparent overlay
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Modal dimensions - fit exactly to buff cards (even smaller)
+        const cardWidth = 130;
+        const cardHeight = 150;
+        const cardSpacing = 12;
+        const totalCardWidth = (cardWidth * 3) + (cardSpacing * 2);
+        const modalWidth = totalCardWidth + 30;
+        const modalHeight = 230;
+        const modalX = (this.canvas.width - modalWidth) / 2;
+        const modalY = (this.canvas.height - modalHeight) / 2;
+        const padding = 10;
+        const borderWidth = 3;
+        
+        // Draw wood-style border (light)
+        const borderGradient = this.ctx.createLinearGradient(modalX, modalY, modalX, modalY + modalHeight);
+        borderGradient.addColorStop(0, '#c9a961');
+        borderGradient.addColorStop(0.5, '#b8956f');
+        borderGradient.addColorStop(1, '#a0754d');
+        this.ctx.fillStyle = borderGradient;
+        this.ctx.fillRect(modalX, modalY, modalWidth, modalHeight);
+        
+        // Draw darker wood inside
+        const innerGradient = this.ctx.createLinearGradient(modalX + borderWidth, modalY + borderWidth, modalX + borderWidth, modalY + modalHeight - borderWidth);
+        innerGradient.addColorStop(0, '#4a3728');
+        innerGradient.addColorStop(0.5, '#3d2f23');
+        innerGradient.addColorStop(1, '#2d1f18');
+        this.ctx.fillStyle = innerGradient;
+        this.ctx.fillRect(modalX + borderWidth, modalY + borderWidth, modalWidth - borderWidth * 2, modalHeight - borderWidth * 2);
+        
+        // Draw title
+        this.ctx.fillStyle = '#ffc107';
+        this.ctx.font = 'bold 18px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText('CHOOSE YOUR BUFF', this.canvas.width / 2, modalY + padding + 3);
+        
+        // Draw subtitle
+        this.ctx.fillStyle = '#87ceeb';
+        this.ctx.font = '10px Arial';
+        this.ctx.fillText('Select one buff (60s)', this.canvas.width / 2, modalY + padding + 22);
+        
+        // Draw divider line
+        this.ctx.strokeStyle = '#c9a961';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(modalX + padding, modalY + padding + 36);
+        this.ctx.lineTo(modalX + modalWidth - padding, modalY + padding + 36);
+        this.ctx.stroke();
+        
+        // Buff cards setup
+        const cardStartY = modalY + padding + 48;
+        const cardsStartX = modalX + (modalWidth - totalCardWidth) / 2;
+        
+        const buffs = [
+            { type: '2x_damage', icon: '⚔️', title: '2x DAMAGE', desc: 'Double tower damage' },
+            { type: '2x_attack_speed', icon: '⚡', title: '2x ATTACK SPEED', desc: 'Double attack speed' },
+            { type: '2x_gameplay', icon: '⏱️', title: '2x GAMEPLAY', desc: 'Double game speed' }
+        ];
+        
+        this.buffCardPositions = [];
+        
+        buffs.forEach((buff, index) => {
+            const cardX = cardsStartX + (index * (cardWidth + cardSpacing));
+            const cardY = cardStartY;
+            
+            // Draw card border (light wood)
+            const cardBorderGradient = this.ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardHeight);
+            cardBorderGradient.addColorStop(0, '#9a7d5f');
+            cardBorderGradient.addColorStop(1, '#7a5d3f');
+            this.ctx.fillStyle = cardBorderGradient;
+            this.ctx.fillRect(cardX, cardY, cardWidth, cardHeight);
+            
+            // Draw card inside (darker)
+            const cardInnerGradient = this.ctx.createLinearGradient(cardX + 2, cardY + 2, cardX + 2, cardY + cardHeight - 2);
+            cardInnerGradient.addColorStop(0, '#3d2f23');
+            cardInnerGradient.addColorStop(1, '#2d1f18');
+            this.ctx.fillStyle = cardInnerGradient;
+            this.ctx.fillRect(cardX + 2, cardY + 2, cardWidth - 4, cardHeight - 4);
+            
+            // Draw icon
+            this.ctx.font = 'bold 24px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillStyle = '#ffc107';
+            this.ctx.fillText(buff.icon, cardX + cardWidth / 2, cardY + 8);
+            
+            // Draw title
+            this.ctx.font = 'bold 11px Arial';
+            this.ctx.fillStyle = '#ffc107';
+            this.ctx.fillText(buff.title, cardX + cardWidth / 2, cardY + 40);
+            
+            // Draw description
+            this.ctx.font = '9px Arial';
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillText(buff.desc, cardX + cardWidth / 2, cardY + 62);
+            
+            // Draw duration
+            this.ctx.font = '8px Arial';
+            this.ctx.fillStyle = '#ff69b4';
+            this.ctx.fillText('60s', cardX + cardWidth / 2, cardY + 78);
+            
+            // Draw button
+            const buttonY = cardY + 92;
+            const buttonWidth = 100;
+            const buttonHeight = 22;
+            const buttonX = cardX + (cardWidth - buttonWidth) / 2;
+            
+            // Button background (light wood)
+            const buttonGradient = this.ctx.createLinearGradient(buttonX, buttonY, buttonX, buttonY + buttonHeight);
+            buttonGradient.addColorStop(0, '#c9a961');
+            buttonGradient.addColorStop(1, '#9a7d5f');
+            this.ctx.fillStyle = buttonGradient;
+            this.ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+            
+            // Button text
+            this.ctx.font = 'bold 10px Arial';
+            this.ctx.fillStyle = '#000000';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('SELECT', buttonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+            
+            // Store button position
+            this.buffCardPositions.push({
+                buffType: buff.type,
+                left: buttonX,
+                top: buttonY,
+                right: buttonX + buttonWidth,
+                bottom: buttonY + buttonHeight
+            });
+        });
+        
+        // Draw info text
+        this.ctx.font = '9px Arial';
+        this.ctx.fillStyle = '#87ceeb';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('💡 More ads = more buffs', this.canvas.width / 2, modalY + modalHeight - 6);
+    }
+
+    /**
+     * Open the ad modal canvas
+     */
+    openAdModalCanvas() {
+        this.showAdModalState = true;
+        this.adModalStartTime = Date.now();
+    }
+
+    /**
+     * Close the ad modal canvas and show buff selection
+     */
+    closeAdModalCanvas() {
+        this.showAdModalState = false;
+        this.showBuffModalState = true;
+    }
+
+    /**
+     * Close the buff modal canvas
+     */
+    closeBuffModalCanvas() {
+        this.showBuffModalState = false;
+    }
+
     drawHUD() {
         const padding = 5;
         const iconSize = 20;
@@ -1825,6 +2074,16 @@ class TowerDefenseGame {
             this.showPauseMenu();
         }
         
+        // Draw canvas-based ad modal if active
+        if (this.showAdModalState) {
+            this.showAdModalCanvas();
+        }
+        
+        // Draw canvas-based buff selection modal if active
+        if (this.showBuffModalState) {
+            this.showBuffSelectionModalCanvas();
+        }
+        
         // Draw in-game message (always on top)
         this.drawGameMessage();
     }
@@ -2352,6 +2611,25 @@ class TowerDefenseGame {
             }
             
             // Don't allow tower placement when paused
+            return;
+        }
+        
+        // Check buff selection modal (canvas-based)
+        if (this.showBuffModalState && this.buffCardPositions && this.buffCardPositions.length > 0) {
+            for (let buffCard of this.buffCardPositions) {
+                if (clickX >= buffCard.left && 
+                    clickX <= buffCard.right &&
+                    clickY >= buffCard.top && 
+                    clickY <= buffCard.bottom) {
+                    this.playButtonClickSound();
+                    // Call AdBuffManager's selectBuff method
+                    if (window.adBuffManager) {
+                        window.adBuffManager.selectBuff(buffCard.buffType);
+                    }
+                    return;
+                }
+            }
+            // Don't allow other interactions when buff modal is showing
             return;
         }
         

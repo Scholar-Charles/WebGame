@@ -73,6 +73,16 @@ class AdBuffManager {
      * Show advertisement modal and start ad playback
      */
     async showAdModal() {
+        // Check if gameInstance is available (canvas-based modal)
+        if (this.gameInstance && typeof this.gameInstance.openAdModalCanvas === 'function') {
+            console.log('Using canvas-based ad modal');
+            this.gameInstance.openAdModalCanvas();
+            // Simulate ad playback in background
+            await this.playSimulatedAd();
+            return;
+        }
+
+        // Fallback to HTML modal if canvas modal not available
         const adModal = document.getElementById('adModal');
         const adSpace = document.getElementById('adSpace');
 
@@ -137,12 +147,17 @@ class AdBuffManager {
      * Handle ad completion and record the click
      */
     async completeAdWatch() {
-        const adModal = document.getElementById('adModal');
-        const adStatus = document.getElementById('adStatus');
+        // Check if using canvas modal
+        const usingCanvasModal = this.gameInstance && typeof this.gameInstance.closeAdModalCanvas === 'function';
 
-        // Update status
-        adStatus.classList.remove('hidden');
-        document.getElementById('adStatusMessage').textContent = 'Ad completed! Recording click...';
+        if (usingCanvasModal) {
+            console.log('Closing canvas ad modal...');
+        } else {
+            const adStatus = document.getElementById('adStatus');
+            // Update status
+            adStatus.classList.remove('hidden');
+            document.getElementById('adStatusMessage').textContent = 'Ad completed! Recording click...';
+        }
 
         try {
             // Record ad click in database
@@ -168,9 +183,16 @@ class AdBuffManager {
 
                 // Delay before showing buff selection
                 setTimeout(() => {
-                    adModal.classList.add('hidden');
-                    adStatus.classList.add('hidden');
-                    this.showBuffModal();
+                    if (usingCanvasModal) {
+                        // Close ad modal and show buff modal via canvas
+                        this.gameInstance.closeAdModalCanvas();
+                    } else {
+                        const adModal = document.getElementById('adModal');
+                        const adStatus = document.getElementById('adStatus');
+                        adModal.classList.add('hidden');
+                        adStatus.classList.add('hidden');
+                        this.showBuffModal();
+                    }
                 }, 1500);
             } else {
                 console.error('Failed to record ad click:', data.error);
@@ -247,8 +269,13 @@ class AdBuffManager {
             if (data.success) {
                 console.log('Buff activated:', data);
 
-                // Close modal and display buff notification
-                this.closeBuffModal();
+                // Close modal (canvas or HTML)
+                if (this.gameInstance && typeof this.gameInstance.closeBuffModalCanvas === 'function') {
+                    this.gameInstance.closeBuffModalCanvas();
+                } else {
+                    this.closeBuffModal();
+                }
+                
                 this.showBuffNotification(buffType, data.duration_seconds);
 
                 // Re-enable buttons
