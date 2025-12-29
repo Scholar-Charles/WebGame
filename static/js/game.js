@@ -458,6 +458,9 @@ class TowerDefenseGame {
         const slotSize = 32;
         
         this.towerSlots.forEach((slot, index) => {
+            // Skip drawing if slot is occupied (tower built here)
+            if (slot.occupied) return;
+            
             const slotImg = this.towerSlotImage;
             
             // Draw slot image if loaded
@@ -2387,8 +2390,9 @@ class TowerDefenseGame {
         this.towers.forEach(tower => {
             // Try to draw tower image first
             const towerImg = this.towerImages[tower.tower_id];
+            const towerSize = 32; // Match slot size
             if (towerImg && towerImg.complete) {
-                this.ctx.drawImage(towerImg, tower.x - 42, tower.y - 45, 80, 80);
+                this.ctx.drawImage(towerImg, tower.x - towerSize / 2, tower.y - towerSize / 2, towerSize, towerSize);
             } else {
                 // Fallback to circle if image not loaded
                 this.ctx.fillStyle = '#667eea';
@@ -3135,7 +3139,7 @@ class TowerDefenseGame {
         let y = clickY / this.zoomLevel;
         
         // Check if click is on a valid tower slot
-        const slotSize = 40;
+        const slotSize = 32;
         let validSlot = null;
         
         for (let i = 0; i < this.towerSlots.length; i++) {
