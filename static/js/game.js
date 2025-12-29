@@ -67,7 +67,7 @@ class TowerDefenseGame {
         this.decorations = [];
         
         // Add zoom/scale factor
-        this.zoomLevel = 0.8; // Reduced from 1.5 to fit on screen
+        this.zoomLevel = 1.0; // 1:1 scale for 32x32 tiles on 640x480 canvas (20x15 tiles)
         
         // Add lobby image
         this.lobbyImage = new Image();
@@ -183,7 +183,7 @@ class TowerDefenseGame {
 
     init() {
         // Load tileset images
-        this.grassTile.src = '/static/img/grass-tile.png';
+        this.grassTile.src = '/static/img/grass-tileset.png'; // 16x16 Tiny Town grass tile
         this.dirtPath.src = '/static/img/dirt-path.png';
         this.treeRock.src = '/static/img/trees-rocks.png';
         this.bush.src = '/static/img/bush.png';
@@ -2099,53 +2099,30 @@ class TowerDefenseGame {
     }
 
     drawGrassBackground() {
-        const tileSize = 32;
-        const cols = Math.ceil(this.canvas.width / tileSize);
-        const rows = Math.ceil(this.canvas.height / tileSize);
+        const originalTileSize = 16;  // Tiny Town tileset is 16x16
+        const displayTileSize = 32;   // Scale up 2x for better visibility
+        const cols = Math.ceil(this.canvas.width / displayTileSize);
+        const rows = Math.ceil(this.canvas.height / displayTileSize);
         
-        // Draw forest procedurally
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
-                const x = col * tileSize;
-                const y = row * tileSize;
-                
-                // Use perlin-like noise for forest generation
-                const noise = this.getForestNoise(col, row);
-                let color = '#2d5016'; // Dark green base
-                
-                if (noise > 0.7) {
-                    color = '#1a3d0a'; // Very dark forest
-                } else if (noise > 0.5) {
-                    color = '#2d5016'; // Dark green
-                } else if (noise > 0.3) {
-                    color = '#3d6b1f'; // Medium green
-                } else {
-                    color = '#4d8b2f'; // Light green grass
-                }
-                
-                this.ctx.fillStyle = color;
-                this.ctx.fillRect(x, y, tileSize, tileSize);
-                
-                // Add pixelated tree details - but not on tower slots
-                if (noise > 0.6) {
-                    // Check if this tile overlaps with a tower slot
-                    const tileCenter = { x: x + tileSize / 2, y: y + tileSize / 2 };
-                    let isOnTowerSlot = false;
+        // Draw grass tiles from the Tiny Town tileset
+        if (this.grassTile.complete && this.grassTile.naturalWidth > 0) {
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const x = col * displayTileSize;
+                    const y = row * displayTileSize;
                     
-                    for (let slot of this.towerSlots) {
-                        const distance = Math.sqrt((tileCenter.x - slot.x) ** 2 + (tileCenter.y - slot.y) ** 2);
-                        if (distance < 40) { // Tower slot radius
-                            isOnTowerSlot = true;
-                            break;
-                        }
-                    }
-                    
-                    // Only draw tree if not on a tower slot
-                    if (!isOnTowerSlot) {
-                        this.drawPixelatedTree(x, y, tileSize);
-                    }
+                    // Draw the grass tile scaled from 16x16 to 32x32
+                    this.ctx.drawImage(
+                        this.grassTile,
+                        0, 0, originalTileSize, originalTileSize,  // Source (full 16x16 tile)
+                        x, y, displayTileSize, displayTileSize     // Destination (scaled to 32x32)
+                    );
                 }
             }
+        } else {
+            // Fallback to solid green if image not loaded
+            this.ctx.fillStyle = '#4d8b2f';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         }
     }
 
