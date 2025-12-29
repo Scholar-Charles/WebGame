@@ -16,10 +16,20 @@ class TowerDefenseGame {
         this.score = 0;
         this.gameStartTime = null;
         
+        // Buff multipliers for ad rewards
+        this.damageMultiplier = 1.0;
+        this.attackSpeedMultiplier = 1.0;
+        this.gameplaySpeedMultiplier = 1.0;
+        
         this.towers = [];
         this.enemies = [];
         this.projectiles = [];
+        this.floatingTexts = []; // Array to store floating damage numbers
         this.selectedTower = null;
+        
+        // Buff expiration tracking
+        this.activeBuffs = {}; // Track active buffs and their expiration times
+        // activeBuffs format: { '2x_damage': expirationTime, '2x_attack_speed': expirationTime, ... }
         
         // Add tower cooldowns tracking
         this.towerCooldowns = {};
@@ -1526,6 +1536,82 @@ class TowerDefenseGame {
         return;
     }
 
+    // ========================================
+    // BUFF SYSTEM METHODS
+    // ========================================
+
+    /**
+     * Apply damage buff multiplier (called by AdBuffManager)
+     */
+    applyDamageBuffMultiplier(multiplier) {
+        this.damageMultiplier = multiplier;
+        const expirationTime = Date.now() + 60000; // 60 seconds
+        this.activeBuffs['2x_damage'] = expirationTime;
+        console.log('✓ Damage multiplier set to:', multiplier, '- expires in 60 seconds');
+    }
+
+    /**
+     * Apply attack speed buff multiplier (called by AdBuffManager)
+     */
+    applyAttackSpeedBuffMultiplier(multiplier) {
+        this.attackSpeedMultiplier = multiplier;
+        const expirationTime = Date.now() + 60000; // 60 seconds
+        this.activeBuffs['2x_attack_speed'] = expirationTime;
+        console.log('✓ Attack speed multiplier set to:', multiplier, '- expires in 60 seconds');
+    }
+
+    /**
+     * Apply gameplay speed buff multiplier (called by AdBuffManager)
+     */
+    applyGameplaySpeedBuffMultiplier(multiplier) {
+        this.gameplaySpeedMultiplier = multiplier;
+        const expirationTime = Date.now() + 60000; // 60 seconds
+        this.activeBuffs['2x_gameplay'] = expirationTime;
+        console.log('✓ Gameplay speed multiplier set to:', multiplier, '- expires in 60 seconds');
+    }
+
+    /**
+     * Check if buffs have expired and reset them
+     */
+    checkBuffExpiration() {
+        const now = Date.now();
+        
+        // Check damage buff
+        if (this.activeBuffs['2x_damage'] && now >= this.activeBuffs['2x_damage']) {
+            console.log('⏰ Damage buff expired - resetting to 1.0');
+            this.damageMultiplier = 1.0;
+            delete this.activeBuffs['2x_damage'];
+        }
+        
+        // Check attack speed buff
+        if (this.activeBuffs['2x_attack_speed'] && now >= this.activeBuffs['2x_attack_speed']) {
+            console.log('⏰ Attack speed buff expired - resetting to 1.0');
+            this.attackSpeedMultiplier = 1.0;
+            delete this.activeBuffs['2x_attack_speed'];
+        }
+        
+        // Check gameplay speed buff
+        if (this.activeBuffs['2x_gameplay'] && now >= this.activeBuffs['2x_gameplay']) {
+            console.log('⏰ Gameplay speed buff expired - resetting to 1.0');
+            this.gameplaySpeedMultiplier = 1.0;
+            delete this.activeBuffs['2x_gameplay'];
+        }
+    }
+
+    /**
+     * Get effective tower damage with buff applied
+     */
+    getEffectiveTowerDamage(baseDamage) {
+        return baseDamage * (this.damageMultiplier || 1.0);
+    }
+
+    /**
+     * Get effective attack speed with buff applied
+     */
+    getEffectiveTowerAttackSpeed(baseSpeed) {
+        return baseSpeed * (this.attackSpeedMultiplier || 1.0);
+    }
+
     draw() {
         // Disable image smoothing
         this.ctx.imageSmoothingEnabled = false;
@@ -1627,6 +1713,30 @@ class TowerDefenseGame {
             this.ctx.fillStyle = '#00ff00';
             this.ctx.fillRect(enemy.x - 15, enemy.y - 25, (enemy.hp / enemy.maxHp) * 30, 3);
         });
+        
+        // Draw floating damage texts
+        this.floatingTexts.forEach(text => {
+            const alpha = 1 - (text.age / text.maxAge); // Fade out over time
+            this.ctx.globalAlpha = alpha;
+            
+            this.ctx.fillStyle = '#FFD700'; // Gold color for damage numbers
+            this.ctx.font = 'bold 20px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            
+            // Add shadow for better readability
+            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            this.ctx.shadowBlur = 3;
+            this.ctx.shadowOffsetX = 1;
+            this.ctx.shadowOffsetY = 1;
+            
+            this.ctx.fillText(text.text, text.x, text.y);
+            
+            // Clear shadow
+            this.ctx.shadowColor = 'transparent';
+        });
+        
+        this.ctx.globalAlpha = 1; // Reset alpha
         
         // Restore context state
         this.ctx.restore();
@@ -1951,6 +2061,14 @@ class TowerDefenseGame {
             .then (data => {
                 if (data.success) {
                     this.sessionId = data.session_id;
+                    
+                    // Initialize Ad/Buff Manager
+                    if (!window.adBuffManager && this.sessionId) {
+                        window.adBuffManager = new AdBuffManager(this.sessionId);
+                        window.adBuffManager.gameInstance = this;
+                        console.log('✓ Ad/Buff system initialized');
+                    }
+                    
                     this.isRunning = true;
                     this.isPaused = false;
                     this.gameStartTime = Date.now();
@@ -2287,6 +2405,9 @@ class TowerDefenseGame {
     }
 
     update() {
+        // Check for expired buffs at the start of each update
+        this.checkBuffExpiration();
+        
         const elapsedTime = (Date.now() - this.waveStartTime) / 1000;
         
         if (this.countdownActive) {
@@ -2325,7 +2446,8 @@ class TowerDefenseGame {
 
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
-            enemy.pathProgress += 0.3 * (enemy.speed || 1);
+            const speedMultiplier = this.gameplaySpeedMultiplier || 1.0;
+            enemy.pathProgress += 0.3 * (enemy.speed || 1) * speedMultiplier;
             
             if (enemy.pathProgress >= this.getPathLength()) {
                 enemy.alive = false;
@@ -2348,7 +2470,8 @@ class TowerDefenseGame {
             const towerData = this.allTowersData.find(t => t.tower_id == tower.tower_id);
             if (!towerData) return;
             
-            const attackCooldown = 1000 / towerData.attack_speed;
+            const effectiveAttackSpeed = this.getEffectiveTowerAttackSpeed(towerData.attack_speed);
+            const attackCooldown = 1000 / effectiveAttackSpeed;
             const timeSinceLastAttack = currentTime - this.towerCooldowns[tIdx];
             
             if (timeSinceLastAttack >= attackCooldown) {
@@ -2366,11 +2489,12 @@ class TowerDefenseGame {
                 }
                 
                 if (enemyInRange) {
+                    const effectiveDamage = this.getEffectiveTowerDamage(towerData.base_damage || 10);
                     this.projectiles.push({
                         x: tower.x,
                         y: tower.y,
                         targetEnemy: enemyInRange.enemy,
-                        damage: towerData.base_damage || 10,
+                        damage: effectiveDamage,
                         age: 0,
                         maxAge: 150
                     });
@@ -2380,6 +2504,18 @@ class TowerDefenseGame {
             }
         });
 
+        // Update floating damage texts
+        for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+            const text = this.floatingTexts[i];
+            text.age += 16;
+            text.x += text.velocity.x;
+            text.y += text.velocity.y;
+            
+            if (text.age >= text.maxAge) {
+                this.floatingTexts.splice(i, 1);
+            }
+        }
+        
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const proj = this.projectiles[i];
             proj.age += 16;
@@ -2387,6 +2523,16 @@ class TowerDefenseGame {
             if (proj.age >= proj.maxAge) {
                 if (proj.targetEnemy && proj.targetEnemy.alive) {
                     proj.targetEnemy.hp -= proj.damage;
+                    
+                    // Create floating damage text
+                    this.floatingTexts.push({
+                        x: proj.targetEnemy.x,
+                        y: proj.targetEnemy.y - 20,
+                        text: Math.floor(proj.damage),
+                        age: 0,
+                        maxAge: 1000, // Display for 1 second
+                        velocity: { x: (Math.random() - 0.5) * 2, y: -2 } // Float upward with slight horizontal drift
+                    });
                     
                     if (proj.targetEnemy.hp <= 0) {
                         proj.targetEnemy.alive = false;

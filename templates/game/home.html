@@ -45,6 +45,10 @@
             </main>
         </div>
     </div>
+
+    <!-- Ad and Buff System Modals -->
+    {% include 'game/ad_buff_modal.html' %}
+
     <script>
         // Add CSRF token to all fetch requests
         function getCookie(name) {
@@ -75,6 +79,9 @@
             return originalFetch.apply(this, args);
         };
     </script>
+    <!-- Load Ad/Buff Manager first -->
+    <script src="{% static 'js/ad_buff_manager.js' %}"></script>
+    <!-- Then load main game -->
     <script src="{% static 'js/game.js' %}"></script>
 </body>
 </html>

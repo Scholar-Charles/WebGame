@@ -160,3 +160,39 @@ class AdClick(models.Model):
 
     def __str__(self):
         return f"Ad Click - {self.ad_identifier}"
+
+class Buff(models.Model):
+    buff_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    player = models.ForeignKey('authentication.Player', on_delete=models.CASCADE)
+    session = models.ForeignKey(GameSession, on_delete=models.CASCADE)
+    ad_click = models.ForeignKey(AdClick, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    BUFF_TYPES = [
+        ('2x_damage', '2x Damage'),
+        ('2x_attack_speed', '2x Attack Speed'),
+        ('2x_gameplay', '2x Gameplay Speed'),
+    ]
+    
+    buff_type = models.CharField(max_length=50, choices=BUFF_TYPES)
+    multiplier = models.FloatField(default=2.0)
+    
+    activated_at = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'buffs'
+        managed = False
+        indexes = [
+            models.Index(fields=['player', 'is_active']),
+            models.Index(fields=['session', 'is_active']),
+            models.Index(fields=['is_active', 'expires_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.player.username} - {self.buff_type}"
+
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        return timezone.now() > self.expires_at

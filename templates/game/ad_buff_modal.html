@@ -1,0 +1,483 @@
+<!-- Ad Watching Modal Component -->
+<!-- Add this to your game/home.html -->
+
+<!-- Ad Modal Container -->
+<div id="adModal" class="ad-modal hidden">
+    <!-- Ad Display Area -->
+    <div class="ad-container">
+        <div class="ad-header">
+            <h2>WATCH AD FOR BUFF</h2>
+            <button class="ad-close-btn" id="adCloseBtn">&times;</button>
+        </div>
+        
+        <!-- Ad Space (Google AdMob will be injected here) -->
+        <div id="adSpace" class="ad-space">
+            <!-- Rewarded ad placeholder -->
+            <div class="ad-placeholder">
+                <p>Loading Advertisement...</p>
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+        
+        <!-- Ad Status Messages -->
+        <div id="adStatus" class="ad-status hidden">
+            <p id="adStatusMessage">Ad playing...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Buff Selection Modal -->
+<div id="buffModal" class="buff-modal hidden">
+    <div class="buff-container">
+        <div class="buff-header">
+            <h2>CHOOSE YOUR BUFF</h2>
+            <p class="buff-subtitle">Select one buff to activate (60 seconds)</p>
+        </div>
+        
+        <!-- Buff Options -->
+        <div class="buff-options">
+            <!-- 2x Damage Buff -->
+            <div class="buff-card" id="buffCard_2x_damage" data-buff-type="2x_damage">
+                <div class="buff-icon">⚔️</div>
+                <h3>2x DAMAGE</h3>
+                <p class="buff-description">Double tower damage output</p>
+                <p class="buff-duration">Duration: 60 seconds</p>
+                <button class="buff-select-btn" data-buff-type="2x_damage">
+                    SELECT
+                </button>
+            </div>
+            
+            <!-- 2x Attack Speed Buff -->
+            <div class="buff-card" id="buffCard_2x_attack_speed" data-buff-type="2x_attack_speed">
+                <div class="buff-icon">⚡</div>
+                <h3>2x ATTACK SPEED</h3>
+                <p class="buff-description">Double tower attack speed</p>
+                <p class="buff-duration">Duration: 60 seconds</p>
+                <button class="buff-select-btn" data-buff-type="2x_attack_speed">
+                    SELECT
+                </button>
+            </div>
+            
+            <!-- 2x Gameplay Buff -->
+            <div class="buff-card" id="buffCard_2x_gameplay" data-buff-type="2x_gameplay">
+                <div class="buff-icon">⏱️</div>
+                <h3>2x GAMEPLAY</h3>
+                <p class="buff-description">Double game speed (harder waves)</p>
+                <p class="buff-duration">Duration: 60 seconds</p>
+                <button class="buff-select-btn" data-buff-type="2x_gameplay">
+                    SELECT
+                </button>
+            </div>
+        </div>
+        
+        <!-- Info Text -->
+        <div class="buff-info">
+            <p>💡 Tip: Choose wisely! You can watch more ads later for additional buffs.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Buff Status Display (in-game) -->
+<div id="buffStatusDisplay" class="buff-status-display">
+    <div id="activeBuffsList" class="active-buffs-list">
+        <!-- Active buffs will be listed here dynamically -->
+    </div>
+</div>
+
+<!-- Watch Ad Button (place in your game UI) -->
+<button id="watchAdBtn" class="watch-ad-btn" title="Click to watch an ad and get a buff">
+    📺 WATCH AD
+</button>
+
+<!-- CSS for Ad and Buff System -->
+<style>
+/* ======================== */
+/* AD MODAL STYLES */
+/* ======================== */
+
+.ad-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    font-family: 'Press Start 2P', cursive;
+}
+
+.ad-modal.hidden {
+    display: none;
+}
+
+.ad-container {
+    background-color: #1a1a2e;
+    border: 4px solid #16213e;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+    padding: 20px;
+}
+
+.ad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #667eea;
+}
+
+.ad-header h2 {
+    color: #00d4ff;
+    font-size: 1.2em;
+    margin: 0;
+    text-shadow: 0 0 10px #00d4ff;
+}
+
+.ad-close-btn {
+    background: none;
+    border: none;
+    color: #ff006e;
+    font-size: 2em;
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    transition: transform 0.2s;
+}
+
+.ad-close-btn:hover {
+    transform: scale(1.2);
+}
+
+.ad-space {
+    background-color: #0f3460;
+    border: 2px dashed #667eea;
+    border-radius: 8px;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.ad-placeholder {
+    text-align: center;
+    color: #667eea;
+}
+
+.ad-placeholder p {
+    margin: 10px 0;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border: 3px solid #667eea;
+    border-top-color: #00d4ff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.ad-status {
+    text-align: center;
+    padding: 15px;
+    background-color: #0f3460;
+    border-radius: 8px;
+}
+
+.ad-status.hidden {
+    display: none;
+}
+
+.ad-status p {
+    color: #00d4ff;
+    margin: 0;
+}
+
+/* ======================== */
+/* BUFF MODAL STYLES */
+/* ======================== */
+
+.buff-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    font-family: 'Press Start 2P', cursive;
+}
+
+.buff-modal.hidden {
+    display: none;
+}
+
+.buff-container {
+    background-color: #1a1a2e;
+    border: 4px solid #16213e;
+    border-radius: 10px;
+    max-width: 900px;
+    width: 95%;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+    padding: 30px;
+}
+
+.buff-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #00d4ff;
+}
+
+.buff-header h2 {
+    color: #00d4ff;
+    font-size: 1.4em;
+    margin: 0 0 10px 0;
+    text-shadow: 0 0 15px #00d4ff;
+}
+
+.buff-subtitle {
+    color: #667eea;
+    font-size: 0.6em;
+    margin: 0;
+}
+
+.buff-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.buff-card {
+    background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.buff-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.3), transparent);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translate(-100%, -100%) rotate(45deg); }
+    100% { transform: translate(100%, 100%) rotate(45deg); }
+}
+
+.buff-card:hover {
+    border-color: #00d4ff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+    transform: translateY(-5px);
+}
+
+.buff-card:active {
+    transform: translateY(-2px);
+}
+
+.buff-icon {
+    font-size: 3em;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.buff-card h3 {
+    color: #00d4ff;
+    font-size: 0.9em;
+    margin: 10px 0;
+    text-shadow: 0 0 10px #00d4ff;
+}
+
+.buff-description {
+    color: #667eea;
+    font-size: 0.5em;
+    margin: 10px 0;
+    line-height: 1.4;
+}
+
+.buff-duration {
+    color: #ff006e;
+    font-size: 0.5em;
+    margin: 10px 0;
+}
+
+.buff-select-btn {
+    background: linear-gradient(135deg, #667eea 0%, #00d4ff 100%);
+    color: #000;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.5em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.buff-select-btn:hover {
+    background: linear-gradient(135deg, #00d4ff 0%, #667eea 100%);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.8);
+    transform: scale(1.05);
+}
+
+.buff-select-btn:active {
+    transform: scale(0.98);
+}
+
+.buff-info {
+    text-align: center;
+    padding: 15px;
+    background-color: rgba(102, 126, 234, 0.2);
+    border: 1px dashed #667eea;
+    border-radius: 5px;
+    color: #667eea;
+    font-size: 0.5em;
+    line-height: 1.6;
+}
+
+/* ======================== */
+/* BUFF STATUS DISPLAY */
+/* ======================== */
+
+.buff-status-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 500;
+    max-width: 300px;
+}
+
+.active-buffs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.buff-badge {
+    background: linear-gradient(135deg, #667eea 0%, #00d4ff 100%);
+    color: #000;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.5em;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
+    animation: buffPulse 1s infinite;
+}
+
+@keyframes buffPulse {
+    0%, 100% { box-shadow: 0 0 15px rgba(0, 212, 255, 0.6); }
+    50% { box-shadow: 0 0 25px rgba(0, 212, 255, 0.9); }
+}
+
+.buff-badge .buff-name {
+    display: block;
+    font-weight: bold;
+}
+
+.buff-badge .buff-timer {
+    display: block;
+    font-size: 0.8em;
+    margin-top: 3px;
+}
+
+/* ======================== */
+/* WATCH AD BUTTON */
+/* ======================== */
+
+.watch-ad-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: linear-gradient(135deg, #ff006e 0%, #ff4757 100%);
+    color: #fff;
+    border: 2px solid #ff006e;
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.7em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 400;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
+}
+
+.watch-ad-btn:hover {
+    background: linear-gradient(135deg, #ff4757 0%, #ff006e 100%);
+    box-shadow: 0 0 25px rgba(255, 0, 110, 0.8);
+    transform: scale(1.05);
+}
+
+.watch-ad-btn:active {
+    transform: scale(0.98);
+}
+
+.watch-ad-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .buff-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .buff-header h2 {
+        font-size: 1.1em;
+    }
+    
+    .buff-icon {
+        font-size: 2.5em;
+    }
+    
+    .watch-ad-btn {
+        bottom: 10px;
+        left: 10px;
+        font-size: 0.6em;
+        padding: 10px 15px;
+    }
+    
+    .buff-status-display {
+        top: 10px;
+        right: 10px;
+        max-width: 250px;
+    }
+}
+</style>
