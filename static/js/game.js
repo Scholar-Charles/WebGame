@@ -1458,7 +1458,7 @@ class TowerDefenseGame {
         this.ctx.fillStyle = '#ffffff';
         this.ctx.font = '12px Arial';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText('Watch a 5 second ad', this.canvas.width / 2, modalY + 65);
+        this.ctx.fillText('Watch an advertisement', this.canvas.width / 2, modalY + 65);
         this.ctx.fillText('to get a buff reward', this.canvas.width / 2, modalY + 82);
         
         // Button dimensions
