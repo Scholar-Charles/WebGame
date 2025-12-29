@@ -160,7 +160,9 @@ class TowerDefenseGame {
         this.adModalStartTime = null;
         this.adModalDuration = 5000; // 5 seconds
         this.adVideoDuration = 20000; // 20 seconds for video ad
-        this.adVideoUrl = 'https://www.youtube.com/embed/dQw4w9WgXcQ'; // Placeholder video URL - change to your ad
+        this.adVideoUrl = 'https://www.youtube.com/dQw4w9WgXcQ'; // Placeholder video URL - change to your ad
+        this.adCooldownTime = 0; // Timestamp when cooldown started
+        this.adCooldownDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
         
         // Audio elements
         this.lobbyMusic = new Audio();
@@ -1643,6 +1645,8 @@ class TowerDefenseGame {
     closeAdVideoModal() {
         this.showAdVideoModalState = false;
         this.showBuffModalState = true;
+        // Start cooldown timer (5 minutes)
+        this.adCooldownTime = Date.now();
         // Record ad watch via AdBuffManager
         if (window.adBuffManager) {
             window.adBuffManager.completeAdWatch();
@@ -1797,15 +1801,19 @@ class TowerDefenseGame {
         const buttonX = buildingButtonX - buttonSize - padding; // Left of building button
         const buttonY = this.canvas.height - buttonSize - padding;
         
-        // Calculate pulsing effect (dimming in and out)
-        const pulseOpacity = (Math.sin(Date.now() * 0.003) + 1) / 2; // 0 to 1
+        // Check if button is on cooldown
+        const isOnCooldown = this.adCooldownTime > 0 && (Date.now() - this.adCooldownTime) < this.adCooldownDuration;
+        const remainingCooldown = isOnCooldown ? Math.ceil((this.adCooldownDuration - (Date.now() - this.adCooldownTime)) / 1000) : 0;
+        
+        // Calculate pulsing effect (dimming in and out) - only when not on cooldown
+        const pulseOpacity = !isOnCooldown ? (Math.sin(Date.now() * 0.003) + 1) / 2 : 0; // 0 to 1
         
         // Calculate animation offset
         let offsetX = buttonX;
         let offsetY = buttonY;
         let scale = 1;
         
-        if (this.watchAdButtonPressed) {
+        if (this.watchAdButtonPressed && !isOnCooldown) {
             const pressElapsed = Date.now() - this.watchAdButtonPressTime;
             if (pressElapsed < 150) {
                 scale = 0.85;
@@ -1814,8 +1822,12 @@ class TowerDefenseGame {
             }
         }
         
-        // Apply pulsing opacity to button (dims in and out)
-        this.ctx.globalAlpha = 0.7 + (pulseOpacity * 0.3); // Oscillates between 0.7 and 1.0
+        // Apply opacity based on cooldown state
+        if (isOnCooldown) {
+            this.ctx.globalAlpha = 0.4; // Disabled state
+        } else {
+            this.ctx.globalAlpha = 0.7 + (pulseOpacity * 0.3); // Oscillates between 0.7 and 1.0
+        }
         
         // Draw watch ad image if loaded
         if (this.watchAdButtonImage.complete && this.watchAdButtonImage.naturalWidth > 0) {
@@ -1833,12 +1845,28 @@ class TowerDefenseGame {
         // Reset alpha
         this.ctx.globalAlpha = 1;
         
+        // Draw cooldown timer if on cooldown
+        if (isOnCooldown) {
+            // Display remaining cooldown time
+            this.ctx.fillStyle = '#ff6b6b';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            
+            // Format time display (mm:ss)
+            const minutes = Math.floor(remainingCooldown / 60);
+            const seconds = remainingCooldown % 60;
+            const timeStr = minutes > 0 ? `${minutes}:${String(seconds).padStart(2, '0')}` : `${seconds}s`;
+            this.ctx.fillText(timeStr, buttonX + buttonSize / 2, buttonY + buttonSize / 2);
+        }
+        
         // Store button position for click detection
         this.watchAdButtonPos = {
             left: buttonX,
             top: buttonY,
             right: buttonX + buttonSize,
-            bottom: buttonY + buttonSize
+            bottom: buttonY + buttonSize,
+            isOnCooldown: isOnCooldown
         };
     }
 
@@ -2989,11 +3017,14 @@ class TowerDefenseGame {
                 clickX <= this.watchAdButtonPos.right &&
                 clickY >= this.watchAdButtonPos.top && 
                 clickY <= this.watchAdButtonPos.bottom) {
-                this.watchAdButtonPressed = true;
-                this.watchAdButtonPressTime = Date.now();
-                this.playButtonClickSound();
-                // Show confirmation dialog instead of directly opening ad modal
-                this.showAdConfirmModalState = true;
+                // Only allow click if not on cooldown
+                if (!this.watchAdButtonPos.isOnCooldown) {
+                    this.watchAdButtonPressed = true;
+                    this.watchAdButtonPressTime = Date.now();
+                    this.playButtonClickSound();
+                    // Show confirmation dialog instead of directly opening ad modal
+                    this.showAdConfirmModalState = true;
+                }
                 return;
             }
         }
