@@ -155,6 +155,7 @@ class TowerDefenseGame {
         // Canvas-based modals state
         this.showAdModalState = false;
         this.showBuffModalState = false;
+        this.showAdConfirmModalState = false; // Confirmation dialog before watching ad
         this.adModalStartTime = null;
         this.adModalDuration = 5000; // 5 seconds
         
@@ -1407,6 +1408,116 @@ class TowerDefenseGame {
     }
 
     /**
+     * Show confirmation dialog before watching ad
+     */
+    showAdConfirmModalCanvas() {
+        // Draw semi-transparent overlay
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Modal dimensions
+        const modalWidth = 320;
+        const modalHeight = 180;
+        const modalX = (this.canvas.width - modalWidth) / 2;
+        const modalY = (this.canvas.height - modalHeight) / 2;
+        const padding = 15;
+        const borderWidth = 3;
+        
+        // Draw wood-style border (light)
+        const borderGradient = this.ctx.createLinearGradient(modalX, modalY, modalX, modalY + modalHeight);
+        borderGradient.addColorStop(0, '#c9a961');
+        borderGradient.addColorStop(0.5, '#b8956f');
+        borderGradient.addColorStop(1, '#a0754d');
+        this.ctx.fillStyle = borderGradient;
+        this.ctx.fillRect(modalX, modalY, modalWidth, modalHeight);
+        
+        // Draw darker wood inside
+        const innerGradient = this.ctx.createLinearGradient(modalX + borderWidth, modalY + borderWidth, modalX + borderWidth, modalY + modalHeight - borderWidth);
+        innerGradient.addColorStop(0, '#4a3728');
+        innerGradient.addColorStop(0.5, '#3d2f23');
+        innerGradient.addColorStop(1, '#2d1f18');
+        this.ctx.fillStyle = innerGradient;
+        this.ctx.fillRect(modalX + borderWidth, modalY + borderWidth, modalWidth - borderWidth * 2, modalHeight - borderWidth * 2);
+        
+        // Draw title
+        this.ctx.fillStyle = '#ffc107';
+        this.ctx.font = 'bold 18px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText('WATCH AD FOR BUFF?', this.canvas.width / 2, modalY + padding + 5);
+        
+        // Draw divider line
+        this.ctx.strokeStyle = '#c9a961';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(modalX + padding, modalY + padding + 35);
+        this.ctx.lineTo(modalX + modalWidth - padding, modalY + padding + 35);
+        this.ctx.stroke();
+        
+        // Draw message
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = '12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('Watch a 5 second ad', this.canvas.width / 2, modalY + 65);
+        this.ctx.fillText('to get a buff reward', this.canvas.width / 2, modalY + 82);
+        
+        // Button dimensions
+        const buttonWidth = 100;
+        const buttonHeight = 30;
+        const buttonSpacing = 20;
+        const yesButtonX = modalX + (modalWidth / 2) - buttonWidth - (buttonSpacing / 2);
+        const noButtonX = modalX + (modalWidth / 2) + (buttonSpacing / 2);
+        const buttonY = modalY + modalHeight - 55;
+        
+        // Draw YES button
+        const yesGradient = this.ctx.createLinearGradient(yesButtonX, buttonY, yesButtonX, buttonY + buttonHeight);
+        yesGradient.addColorStop(0, '#4CAF50');
+        yesGradient.addColorStop(1, '#388E3C');
+        this.ctx.fillStyle = yesGradient;
+        this.ctx.fillRect(yesButtonX, buttonY, buttonWidth, buttonHeight);
+        this.ctx.strokeStyle = '#2E7D32';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(yesButtonX, buttonY, buttonWidth, buttonHeight);
+        
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('YES', yesButtonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+        
+        // Draw NO button
+        const noGradient = this.ctx.createLinearGradient(noButtonX, buttonY, noButtonX, noButtonX + buttonHeight);
+        noGradient.addColorStop(0, '#f44336');
+        noGradient.addColorStop(1, '#d32f2f');
+        this.ctx.fillStyle = noGradient;
+        this.ctx.fillRect(noButtonX, buttonY, buttonWidth, buttonHeight);
+        this.ctx.strokeStyle = '#c62828';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(noButtonX, buttonY, buttonWidth, buttonHeight);
+        
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('NO', noButtonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+        
+        // Store button positions
+        this.adConfirmYesPos = {
+            left: yesButtonX,
+            top: buttonY,
+            right: yesButtonX + buttonWidth,
+            bottom: buttonY + buttonHeight
+        };
+        
+        this.adConfirmNoPos = {
+            left: noButtonX,
+            top: buttonY,
+            right: noButtonX + buttonWidth,
+            bottom: buttonY + buttonHeight
+        };
+    }
+
+    /**
      * Close the ad modal canvas and show buff selection
      */
     closeAdModalCanvas() {
@@ -2074,6 +2185,11 @@ class TowerDefenseGame {
             this.showPauseMenu();
         }
         
+        // Draw canvas-based ad confirmation modal if active
+        if (this.showAdConfirmModalState) {
+            this.showAdConfirmModalCanvas();
+        }
+        
         // Draw canvas-based ad modal if active
         if (this.showAdModalState) {
             this.showAdModalCanvas();
@@ -2614,6 +2730,37 @@ class TowerDefenseGame {
             return;
         }
         
+        // Check ad confirmation modal (canvas-based)
+        if (this.showAdConfirmModalState) {
+            // Check YES button
+            if (this.adConfirmYesPos) {
+                if (clickX >= this.adConfirmYesPos.left && 
+                    clickX <= this.adConfirmYesPos.right &&
+                    clickY >= this.adConfirmYesPos.top && 
+                    clickY <= this.adConfirmYesPos.bottom) {
+                    this.playButtonClickSound();
+                    this.showAdConfirmModalState = false; // Close confirmation
+                    this.openAdModalCanvas(); // Open ad modal
+                    return;
+                }
+            }
+            
+            // Check NO button
+            if (this.adConfirmNoPos) {
+                if (clickX >= this.adConfirmNoPos.left && 
+                    clickX <= this.adConfirmNoPos.right &&
+                    clickY >= this.adConfirmNoPos.top && 
+                    clickY <= this.adConfirmNoPos.bottom) {
+                    this.playButtonClickSound();
+                    this.showAdConfirmModalState = false; // Close confirmation
+                    return;
+                }
+            }
+            
+            // Don't allow other interactions when confirmation modal is showing
+            return;
+        }
+        
         // Check buff selection modal (canvas-based)
         if (this.showBuffModalState && this.buffCardPositions && this.buffCardPositions.length > 0) {
             for (let buffCard of this.buffCardPositions) {
@@ -2688,10 +2835,8 @@ class TowerDefenseGame {
                 this.watchAdButtonPressed = true;
                 this.watchAdButtonPressTime = Date.now();
                 this.playButtonClickSound();
-                // Trigger the watch ad modal from AdBuffManager
-                if (window.adBuffManager) {
-                    window.adBuffManager.showAdModal();
-                }
+                // Show confirmation dialog instead of directly opening ad modal
+                this.showAdConfirmModalState = true;
                 return;
             }
         }
