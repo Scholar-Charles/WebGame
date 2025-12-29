@@ -44,6 +44,7 @@ class TowerDefenseGame {
         // Wave countdown tracking
         this.countdownActive = false;
         this.countdownStartTime = null;
+        this.countdownPausedElapsed = 0; // Track elapsed time when paused
         
         // Tileset images
         this.grassTile = new Image();
@@ -2831,7 +2832,20 @@ class TowerDefenseGame {
     }
 
     togglePause() {
-        this.isPaused = !this.isPaused;
+        if (this.isPaused) {
+            // Resuming - adjust countdown start time if countdown was active
+            if (this.countdownActive && this.countdownPausedElapsed > 0) {
+                // Reset countdown start time to account for paused time
+                this.countdownStartTime = Date.now() - (this.countdownPausedElapsed * 1000);
+            }
+            this.isPaused = false;
+        } else {
+            // Pausing - save countdown elapsed time if countdown is active
+            if (this.countdownActive) {
+                this.countdownPausedElapsed = (Date.now() - this.countdownStartTime) / 1000;
+            }
+            this.isPaused = true;
+        }
         const pauseBtn = document.getElementById('pauseGameBtn');
         if (pauseBtn) {
             pauseBtn.textContent = this.isPaused ? 'Resume' : 'Pause';
@@ -3368,6 +3382,7 @@ class TowerDefenseGame {
         if (this.currentWave < this.waves.length) {
             this.countdownActive = true;
             this.countdownStartTime = Date.now();
+            this.countdownPausedElapsed = 0; // Reset paused elapsed time
             const countdownOverlay = document.getElementById('waveCountdownOverlay');
             if (countdownOverlay) {
                 countdownOverlay.classList.remove('hidden');
