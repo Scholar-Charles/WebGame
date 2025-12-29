@@ -87,6 +87,12 @@ class TowerDefenseGame {
         // Add pause button image
         this.pauseButtonImage = new Image();
         
+        // Add watch ad button image
+        this.watchAdButtonImage = new Image();
+        this.watchAdButtonPressed = false;
+        this.watchAdButtonPressTime = 0;
+        this.watchAdGlowIntensity = 0; // For pulsing glow effect (0 to 1)
+        
         // Add tower slot image
         this.towerSlotImage = new Image();
         this.towerSlots = []; // Array to store tower slot positions
@@ -205,6 +211,12 @@ class TowerDefenseGame {
         this.pauseButtonImage.src = '/static/img/pause.png';
         this.pauseButtonImage.onerror = () => {
             console.warn('Failed to load pause button image at /static/img/pause.png');
+        };
+        
+        // Load watch ad button image
+        this.watchAdButtonImage.src = '/static/img/watch-ad.png';
+        this.watchAdButtonImage.onerror = () => {
+            console.warn('Failed to load watch ad button image at /static/img/watch-ad.png');
         };
         
         // Load tower slot image
@@ -1285,6 +1297,77 @@ class TowerDefenseGame {
         };
     }
 
+    drawWatchAdButton() {
+        const buttonSize = 60;
+        const padding = 10;
+        const buttonX = padding; // Bottom left corner
+        const buttonY = this.canvas.height - buttonSize - padding;
+        
+        // Update glow intensity for pulsing effect
+        const glowSpeed = 0.01; // Adjust for faster/slower pulsing
+        this.watchAdGlowIntensity = (Math.sin(Date.now() * glowSpeed) + 1) / 2; // 0 to 1
+        
+        // Calculate animation offset
+        let offsetX = buttonX;
+        let offsetY = buttonY;
+        let scale = 1;
+        
+        if (this.watchAdButtonPressed) {
+            const pressElapsed = Date.now() - this.watchAdButtonPressTime;
+            if (pressElapsed < 150) {
+                scale = 0.85;
+                offsetX = buttonX + (buttonSize * 0.075);
+                offsetY = buttonY + (buttonSize * 0.075);
+            }
+        }
+        
+        // Draw glowing background (pulsing glow effect)
+        const glowRadius = buttonSize / 2 + (this.watchAdGlowIntensity * 10);
+        const glowGradient = this.ctx.createRadialGradient(offsetX + buttonSize / 2, offsetY + buttonSize / 2, buttonSize / 2, offsetX + buttonSize / 2, offsetY + buttonSize / 2, glowRadius);
+        glowGradient.addColorStop(0, `rgba(255, 0, 255, ${this.watchAdGlowIntensity * 0.6})`); // Magenta/Pink glow
+        glowGradient.addColorStop(1, 'rgba(255, 0, 255, 0)');
+        this.ctx.fillStyle = glowGradient;
+        this.ctx.fillRect(offsetX - 10, offsetY - 10, buttonSize + 20, buttonSize + 20);
+        
+        // Draw button background with leather texture
+        const gradient = this.ctx.createLinearGradient(offsetX, offsetY, offsetX, offsetY + buttonSize);
+        gradient.addColorStop(0, '#ff1493');
+        gradient.addColorStop(0.5, '#ff69b4');
+        gradient.addColorStop(1, '#ff1493');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
+        
+        // Add inner highlight
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        this.ctx.fillRect(offsetX + 2, offsetY + 2, (buttonSize - 4) * scale, (buttonSize - 4) * scale * 0.3);
+        
+        // Button border
+        this.ctx.strokeStyle = '#ff0080';
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeRect(offsetX, offsetY, buttonSize * scale, buttonSize * scale);
+        
+        // Draw watch ad image if loaded
+        if (this.watchAdButtonImage.complete && this.watchAdButtonImage.naturalWidth > 0) {
+            this.ctx.drawImage(this.watchAdButtonImage, offsetX + 5, offsetY + 5, (buttonSize - 10) * scale, (buttonSize - 10) * scale);
+        } else {
+            // Fallback - draw text
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('WATCH', offsetX + buttonSize / 2, offsetY + buttonSize / 2 - 8);
+            this.ctx.fillText('AD', offsetX + buttonSize / 2, offsetY + buttonSize / 2 + 8);
+        }
+        
+        // Store button position for click detection
+        this.watchAdButtonPos = {
+            left: buttonX,
+            top: buttonY,
+            right: buttonX + buttonSize,
+            bottom: buttonY + buttonSize
+        };
+    }
+
     showBuildingMenu() {
         // Draw semi-transparent overlay
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
@@ -1746,6 +1829,7 @@ class TowerDefenseGame {
             this.drawPauseButton();
             this.drawWaveInfoDisplay();
             this.drawBuildingButton();
+            this.drawWatchAdButton();
             this.drawHUD();
         }
         
@@ -2335,6 +2419,23 @@ class TowerDefenseGame {
             }
         }
         
+        // Check watch ad button
+        if (this.isRunning && this.watchAdButtonPos) {
+            if (clickX >= this.watchAdButtonPos.left && 
+                clickX <= this.watchAdButtonPos.right &&
+                clickY >= this.watchAdButtonPos.top && 
+                clickY <= this.watchAdButtonPos.bottom) {
+                this.watchAdButtonPressed = true;
+                this.watchAdButtonPressTime = Date.now();
+                this.playButtonClickSound();
+                // Trigger the watch ad modal from AdBuffManager
+                if (window.adBuffManager) {
+                    window.adBuffManager.showAdModal();
+                }
+                return;
+            }
+        }
+        
         // Only place towers during active gameplay
         if (!this.selectedTower) return;
 
@@ -2407,6 +2508,11 @@ class TowerDefenseGame {
     update() {
         // Check for expired buffs at the start of each update
         this.checkBuffExpiration();
+        
+        // Reset watch ad button pressed state
+        if (this.watchAdButtonPressed && Date.now() - this.watchAdButtonPressTime > 200) {
+            this.watchAdButtonPressed = false;
+        }
         
         const elapsedTime = (Date.now() - this.waveStartTime) / 1000;
         
