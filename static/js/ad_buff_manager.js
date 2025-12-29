@@ -1,33 +1,61 @@
 /**
  * Ads and Buff System Manager
  * Handles advertisement display, tracking, and buff activation
+ * Uses Google AdSense for display ads
  */
 
 class AdBuffManager {
     constructor(sessionId) {
         this.sessionId = sessionId;
         this.gameInstance = null; // Reference to TowerDefenseGame instance
-        this.adMobInitialized = false;
+        this.adSenseInitialized = false;
         this.currentAdClick = null;
-        this.activateAdmobScript();
+        this.adIsDisplaying = false;
+        this.activateAdSenseScript();
         this.initializeEventListeners();
         this.buffUpdateInterval = null;
     }
 
     /**
-     * Load Google AdMob script
-     * Uses test ads by default - replace with your real ad unit IDs in production
+     * Load Google AdSense script
+     * Replace YOUR_PUBLISHER_ID with your actual AdSense publisher ID
      */
-    activateAdmobScript() {
+    activateAdSenseScript() {
+        // Load Google AdSense SDK
         const script = document.createElement('script');
         script.async = true;
-        script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-app-pub-xxxxxxxxxxxxxxxx';
+        // Using Google test publisher ID for development
+        script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3940256099942544';
         script.onload = () => {
-            this.adMobInitialized = true;
-            console.log('Google AdMob loaded');
-            // (adsbygoogle = window.adsbygoogle || []).push({});
+            console.log('✓ Google AdSense SDK loaded');
+            this.adSenseInitialized = true;
+        };
+        script.onerror = () => {
+            console.warn('⚠️ Failed to load Google AdSense SDK, using simulated ads');
+            this.adSenseInitialized = false;
         };
         document.head.appendChild(script);
+    }
+
+    /**
+     * Initialize AdSense display ads
+     */
+    initializeAdSense() {
+        if (!this.adSenseInitialized) {
+            console.log('AdSense not ready, using simulated ads');
+            return;
+        }
+        
+        try {
+            // Push AdSense ads if available
+            if (window.adsbygoogle) {
+                window.adsbygoogle = window.adsbygoogle || [];
+                window.adsbygoogle.push({});
+                console.log('✓ AdSense ads initialized');
+            }
+        } catch (error) {
+            console.warn('AdSense initialization warning:', error);
+        }
     }
 
     /**
@@ -70,15 +98,24 @@ class AdBuffManager {
     }
 
     /**
-     * Show advertisement modal and start ad playback
+     * Show advertisement modal and display ad
      */
     async showAdModal() {
         // Check if gameInstance is available (canvas-based modal)
         if (this.gameInstance && typeof this.gameInstance.openAdModalCanvas === 'function') {
             console.log('Using canvas-based ad modal');
             this.gameInstance.openAdModalCanvas();
-            // Simulate ad playback in background
-            await this.playSimulatedAd();
+            
+            // Display ad and wait for completion
+            const adDisplayed = await this.displayAd();
+            
+            if (adDisplayed) {
+                // Close ad modal and show buff selection after ad completes
+                this.gameInstance.closeAdModalCanvas();
+                setTimeout(() => {
+                    this.gameInstance.showBuffSelectionModalCanvas();
+                }, 500);
+            }
             return;
         }
 
@@ -99,43 +136,207 @@ class AdBuffManager {
         // Show modal
         adModal.classList.remove('hidden');
 
-        // Simulate ad loading
-        adSpace.innerHTML = `
-            <div class="ad-placeholder">
-                <p>Loading Advertisement...</p>
-                <div class="loading-spinner"></div>
-            </div>
-        `;
+        // Display advertisement
+        console.log('Starting ad display...');
+        const adDisplayed = await this.displayAd();
 
-        // Simulate ad playing for 5 seconds (in production, use real Google AdMob)
-        console.log('Ad modal opened - simulating ad playback');
-        
-        // For production: Use Google AdMob Rewarded Ad
-        // This is simplified for demonstration
-        await this.playSimulatedAd();
+        if (adDisplayed) {
+            // Successfully viewed ad
+            setTimeout(() => {
+                adModal.classList.add('hidden');
+                this.showBuffModal();
+            }, 1000);
+        } else {
+            // Ad was skipped
+            adModal.classList.add('hidden');
+        }
     }
 
     /**
-     * Simulate ad playback (REPLACE WITH REAL ADMOB IN PRODUCTION)
+     * Display advertisement (AdSense display ad or fallback)
+     * Shows a 30-second ad with option to skip after 5 seconds
      */
-    async playSimulatedAd() {
+    async displayAd() {
+        try {
+            // Try to display real AdSense ad first
+            if (this.adSenseInitialized) {
+                console.log('Displaying Google AdSense display ad...');
+                return await this.displayAdSenseAd();
+            } else {
+                console.log('AdSense not ready, using simulated ad');
+                return await this.displaySimulatedAd();
+            }
+        } catch (error) {
+            console.error('Error during ad display:', error);
+            return await this.displaySimulatedAd();
+        }
+    }
+
+    /**
+     * Display real Google AdSense display ad
+     */
+    async displayAdSenseAd() {
         return new Promise((resolve) => {
-            // Simulate ad duration (5 seconds)
-            const adDuration = 5000;
+            try {
+                const adContainer = document.getElementById('adSpace');
+                if (!adContainer) {
+                    console.log('Ad container not found, using simulated ad');
+                    resolve(false);
+                    return;
+                }
+
+                // Create AdSense display ad container
+                adContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="color: #888; margin-bottom: 10px; font-size: 12px;">Advertisement</div>
+                        <!-- Google AdSense Display Ad -->
+                        <ins class="adsbygoogle"
+                             style="display:block; width:300px; height:250px; margin: 0 auto;"
+                             data-ad-client="ca-pub-3940256099942544"
+                             data-ad-slot="5224354917"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                    </div>
+                `;
+
+                // Push AdSense to render the ad
+                if (window.adsbygoogle) {
+                    window.adsbygoogle.push({});
+                }
+
+                // 30-second timer with 5-second skip option
+                const adDuration = 30000; // 30 seconds
+                const skipTime = 5000; // Can skip after 5 seconds
+                const startTime = Date.now();
+                let skipped = false;
+
+                // Create skip button after 5 seconds
+                const skipButton = document.createElement('button');
+                skipButton.innerHTML = 'Skip Ad →';
+                skipButton.style.cssText = `
+                    position: absolute;
+                    bottom: 20px;
+                    right: 20px;
+                    padding: 10px 20px;
+                    background: #ff6b6b;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                `;
+                skipButton.onclick = () => {
+                    skipped = true;
+                    skipButton.remove();
+                    resolve(true);
+                };
+
+                const updateAdDisplay = () => {
+                    const elapsed = Date.now() - startTime;
+                    const remaining = Math.max(0, Math.ceil((adDuration - elapsed) / 1000));
+
+                    // Show skip button after 5 seconds
+                    if (elapsed >= skipTime && !skipped) {
+                        skipButton.style.opacity = '1';
+                        if (!skipButton.parentElement) {
+                            adContainer.parentElement?.appendChild(skipButton);
+                        }
+                    }
+
+                    if (remaining > 0 && !skipped) {
+                        setTimeout(updateAdDisplay, 100);
+                    } else if (!skipped) {
+                        skipButton.remove();
+                        console.log('✓ AdSense ad completed');
+                        resolve(true);
+                    }
+                };
+
+                updateAdDisplay();
+
+            } catch (error) {
+                console.error('AdSense ad display failed:', error);
+                resolve(false);
+            }
+        });
+    }
+
+    /**
+     * Play simulated advertisement (fallback when AdSense unavailable)
+     * Shows a 30-second countdown with skip option after 5 seconds
+     */
+    async displaySimulatedAd() {
+        return new Promise((resolve) => {
+            console.log('Displaying simulated ad (30 seconds)...');
+            
+            const adSpace = document.getElementById('adSpace');
+            if (adSpace) {
+                adSpace.innerHTML = `
+                    <div class="ad-placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; position: relative;">
+                        <div style="color: white; font-size: 24px; margin-bottom: 20px; text-align: center;">📢 ADVERTISEMENT</div>
+                        <div style="color: white; font-size: 18px; margin-bottom: 30px;">View this promotion</div>
+                        <div class="loading-spinner"></div>
+                        <div id="adCountdown" style="color: white; font-size: 32px; font-weight: bold; margin-top: 20px;">30</div>
+                    </div>
+                `;
+            }
+
+            const adDuration = 30000; // 30 seconds
+            const skipTime = 5000; // Can skip after 5 seconds
             const startTime = Date.now();
+            let skipped = false;
+
+            // Create skip button
+            const skipButton = document.createElement('button');
+            skipButton.innerHTML = 'Skip Ad →';
+            skipButton.style.cssText = `
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                padding: 10px 20px;
+                background: #ff6b6b;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                opacity: 0;
+                transition: opacity 0.3s;
+                font-family: 'Press Start 2P', cursive;
+                font-size: 12px;
+            `;
+            skipButton.onclick = () => {
+                skipped = true;
+                skipButton.remove();
+                resolve(true);
+            };
 
             const updateAdDisplay = () => {
                 const elapsed = Date.now() - startTime;
-                const remaining = Math.ceil((adDuration - elapsed) / 1000);
+                const remaining = Math.max(0, Math.ceil((adDuration - elapsed) / 1000));
 
-                if (remaining > 0) {
-                    const adStatus = document.getElementById('adStatus');
-                    adStatus.classList.remove('hidden');
-                    document.getElementById('adStatusMessage').textContent = `Ad playing... ${remaining}s remaining`;
+                const countdownEl = document.getElementById('adCountdown');
+                if (countdownEl) {
+                    countdownEl.textContent = remaining;
+                }
+
+                // Show skip button after 5 seconds
+                if (elapsed >= skipTime && !skipped) {
+                    skipButton.style.opacity = '1';
+                    if (!skipButton.parentElement) {
+                        const adSpace = document.getElementById('adSpace');
+                        adSpace?.parentElement?.appendChild(skipButton);
+                    }
+                }
+
+                if (remaining > 0 && !skipped) {
                     setTimeout(updateAdDisplay, 100);
-                } else {
-                    this.completeAdWatch();
-                    resolve();
+                } else if (!skipped) {
+                    skipButton.remove();
+                    console.log('✓ Simulated ad completed');
+                    resolve(true);
                 }
             };
 
@@ -150,14 +351,7 @@ class AdBuffManager {
         // Check if using canvas modal
         const usingCanvasModal = this.gameInstance && typeof this.gameInstance.closeAdModalCanvas === 'function';
 
-        if (usingCanvasModal) {
-            console.log('Closing canvas ad modal...');
-        } else {
-            const adStatus = document.getElementById('adStatus');
-            // Update status
-            adStatus.classList.remove('hidden');
-            document.getElementById('adStatusMessage').textContent = 'Ad completed! Recording click...';
-        }
+        console.log('Ad watch completed! Recording with server...');
 
         try {
             // Record ad click in database
@@ -169,7 +363,7 @@ class AdBuffManager {
                 },
                 body: new URLSearchParams({
                     'session_id': this.sessionId,
-                    'ad_identifier': 'test-ad-' + Date.now(),
+                    'ad_identifier': 'web-ad-' + Date.now(),
                     'target_url': 'https://example.com',
                     'source_context': 'game_buff'
                 })
@@ -179,30 +373,28 @@ class AdBuffManager {
 
             if (data.success) {
                 this.currentAdClick = data.ad_click_id;
-                console.log('Ad click recorded:', data.ad_click_id);
+                console.log('✓ Ad click recorded:', data.ad_click_id);
 
                 // Delay before showing buff selection
                 setTimeout(() => {
                     if (usingCanvasModal) {
-                        // Close ad modal and show buff modal via canvas
-                        this.gameInstance.closeAdModalCanvas();
+                        // Canvas modal will show buff selection automatically
+                        console.log('Showing buff selection on canvas...');
                     } else {
                         const adModal = document.getElementById('adModal');
                         const adStatus = document.getElementById('adStatus');
-                        adModal.classList.add('hidden');
-                        adStatus.classList.add('hidden');
+                        if (adModal) adModal.classList.add('hidden');
+                        if (adStatus) adStatus.classList.add('hidden');
                         this.showBuffModal();
                     }
-                }, 1500);
+                }, 500);
             } else {
                 console.error('Failed to record ad click:', data.error);
-                alert('Error recording ad click. Please try again.');
-                this.closeAdModal();
+                alert('Error: ' + (data.error || 'Failed to record ad click'));
             }
         } catch (error) {
             console.error('Error recording ad click:', error);
-            alert('Error recording ad click. Please try again.');
-            this.closeAdModal();
+            alert('Error: Could not record ad. Please try again.');
         }
     }
 
