@@ -34,7 +34,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
 DEBUG = env('DEBUG')
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'tower-defense-2d.up.railway.app']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,7 +79,7 @@ TEMPLATES = [
 import dj_database_url
 DATABASES = {
     'default': dj_database_url.config(
-        default=env('DATABASE_URL', default='postgresql://postgres:gNzufxRauxcxyaGzCkKipnQvStwyuylW@postgres.railway.internal:5432/railway'),
+        default=env('DATABASE_URL', default='postgres://postgres:postgres@localhost:5432/WebGame'),
         conn_max_age=600,
         ssl_require=False
     )
@@ -113,7 +114,8 @@ LOGOUT_REDIRECT_URL = 'login'
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
     'http://localhost:8000',
     'http://127.0.0.1:8000',
-    'https://*.up.railway.app'
+    'https://*.up.railway.app',
+    'https://tower-defense-2d.up.railway.app'
 ])
 
 # Content Security Policy
