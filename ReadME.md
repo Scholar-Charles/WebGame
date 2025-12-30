@@ -23,7 +23,7 @@
 - Resume
 - Build Tower
 
--How to Build Towers?
+- How to Build Towers?
  1. Click the Hammer Icon
  2. Click the Interface of the Tower
  3. Click the Slots around the map to build
@@ -60,7 +60,7 @@
 
 
 **DATABASE**
-- Check mydbschema.txt to see the tables
+- Check WebGame.sql to see the tables
 
 
 ![Game Preview](screenshots/BuildPreview.png)
