@@ -2750,6 +2750,43 @@ class TowerDefenseGame {
         if (restartBtn) {
             restartBtn.onclick = () => this.restartGame();
         }
+        // Set up replay button listener
+        const replayBtn = document.getElementById('replayGameBtn');
+        if (replayBtn) {
+            replayBtn.onclick = () => {
+                // Hide game end overlay
+                const endOverlay = document.getElementById('gameEndOverlay');
+                if (endOverlay) {
+                    endOverlay.classList.add('hidden');
+                }
+                // Reset game state (like restartGame, but skip lobby)
+                this.sessionId = null;
+                this.isRunning = false;
+                this.isPaused = false;
+                this.playerGold = 500;
+                this.playerLives = 20;
+                this.currentWave = 1;
+                this.score = 0;
+                this.gameStartTime = null;
+                this.towers = [];
+                this.enemies = [];
+                this.projectiles = [];
+                this.selectedTower = null;
+                this.towerCooldowns = {};
+                this.waveEnemySpawnQueue = [];
+                this.waveStartTime = null;
+                this.countdownActive = false;
+                this.countdownStartTime = null;
+                this.gameTitleDropTime = null;
+                this.pauseMenuBattleMusicMuted = false;
+                // Reset UI
+                this.updateUI();
+                this.displayWaveInfo();
+                // Start the game directly (like Start Battle)
+                this.startGame();
+            };
+        }
+
     }
 
     restartGame() {

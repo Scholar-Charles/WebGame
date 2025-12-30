@@ -512,28 +512,57 @@ button:disabled {
     text-shadow: 2px 2px 0px #000000;
 }
 
-.restart-button {
+
+/* End overlay buttons row */
+.end-buttons-row {
+    display: flex;
+    flex-direction: row;
+    gap: 18px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+}
+
+/* Wood style button for end overlay */
+.wood-button {
     font-family: 'Press Start 2P', 'Courier New', monospace;
-    font-size: 16px;
+    font-size: 13px;
     color: #fff;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: 3px solid #667eea;
-    padding: 15px 40px;
+    background: linear-gradient(135deg, #b8956f 0%, #a0754d 100%);
+    border: 3px solid #c9a961;
+    border-radius: 10px;
+    padding: 10px 22px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+    letter-spacing: 1.5px;
+    box-shadow: 0 2px 10px rgba(160, 117, 77, 0.25);
+    position: relative;
+    outline: none;
 }
-
-.restart-button:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-    box-shadow: 0 0 30px rgba(102, 126, 234, 0.8);
-    transform: scale(1.05);
+.wood-button::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #4a3728 0%, #2d1f18 100%);
+    z-index: 0;
 }
-
-.restart-button:active {
-    transform: scale(0.95);
+.wood-button span, .wood-button {
+    position: relative;
+    z-index: 1;
+}
+.wood-button:hover {
+    background: linear-gradient(135deg, #c9a961 0%, #b8956f 100%);
+    box-shadow: 0 4px 18px rgba(160, 117, 77, 0.35);
+    color: #fffbe6;
+    transform: scale(1.06);
+}
+.wood-button:active {
+    transform: scale(0.97);
 }
 
 @keyframes endGamePulse {
