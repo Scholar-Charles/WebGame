@@ -1,4 +1,4 @@
-*TOWER DEFENSE GAME 2D* 
+***TOWER DEFENSE GAME 2D***
 
 
 **TechStack**
@@ -8,7 +8,7 @@
 -RailWay for Deployment
 
 
-*GAME FEATURES*
+***GAME FEATURES***
 
 **AUTHENTICATION**
 -Create an Account
@@ -48,13 +48,20 @@
 - Make sure Python is available , install Python if not available
 
 
-**Need to Install**
+***Need to Install***
 
 -pip install django
 -pip install psycopg2-binary
+-run migrations
+-python manage.py runserver
  
 -After doing this steps now do python manage.py runserver to start
 -Click the http://127.0.0.1:8000/  Ctrl+click
+
+
+**DATABASE**
+-Check mydbschema.txt to see the tables
+
 
 ![Game Preview](screenshots/BuildPreview.png)
 ![Game Preview](screenshots/GameScreen.png)
