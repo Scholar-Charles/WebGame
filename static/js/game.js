@@ -2832,19 +2832,8 @@ class TowerDefenseGame {
     }
 
     togglePause() {
-        if (this.isPaused) {
-            // Resuming - reset countdown start time to now (elapsed is already saved)
-            if (this.countdownActive) {
-                this.countdownStartTime = Date.now();
-            }
-            this.isPaused = false;
-        } else {
-            // Pausing - save total countdown elapsed time
-            if (this.countdownActive) {
-                this.countdownPausedElapsed += (Date.now() - this.countdownStartTime) / 1000;
-            }
-            this.isPaused = true;
-        }
+        // Simple pause toggle - countdown continues even when paused
+        this.isPaused = !this.isPaused;
         const pauseBtn = document.getElementById('pauseGameBtn');
         if (pauseBtn) {
             pauseBtn.textContent = this.isPaused ? 'Resume' : 'Pause';
@@ -3206,6 +3195,11 @@ class TowerDefenseGame {
     gameLoop() {
         if (!this.isRunning) return;
 
+        // Always update countdown even when paused (it's just visual)
+        if (this.countdownActive) {
+            this.updateCountdown();
+        }
+
         if (!this.isPaused) {
             this.update();
         }
@@ -3225,8 +3219,8 @@ class TowerDefenseGame {
         
         const elapsedTime = (Date.now() - this.waveStartTime) / 1000;
         
+        // Skip regular update if countdown is active (handled in gameLoop)
         if (this.countdownActive) {
-            this.updateCountdown();
             this.updateUI();
             return;
         }
@@ -3394,9 +3388,8 @@ class TowerDefenseGame {
     }
 
     updateCountdown() {
-        // Calculate elapsed time since countdown started
-        // countdownPausedElapsed already accounts for any paused time
-        const elapsed = this.countdownPausedElapsed + (Date.now() - this.countdownStartTime) / 1000;
+        // Simple countdown using real time (countdown continues even when paused)
+        const elapsed = (Date.now() - this.countdownStartTime) / 1000;
         const remaining = Math.ceil(3 - elapsed);
         
         const countdownNumber = document.getElementById('countdownNumber');
@@ -3406,7 +3399,6 @@ class TowerDefenseGame {
         
         if (elapsed >= 3) {
             this.countdownActive = false;
-            this.countdownPausedElapsed = 0; // Reset for next countdown
             const countdownOverlay = document.getElementById('waveCountdownOverlay');
             if (countdownOverlay) {
                 countdownOverlay.classList.add('hidden');
