@@ -1,5 +1,8 @@
 class TowerDefenseGame {
     constructor() {
+            // Decorative flower tile
+            this.flower1Tile = new Image();
+            this.flowerDecorations = null;
         this.canvas = document.getElementById('gameCanvas');
         if (!this.canvas) {
             console.error('Canvas element not found!');
@@ -56,6 +59,7 @@ class TowerDefenseGame {
         // Decorative stone tiles
         this.stone1Tile = new Image();
         this.stone2Tile = new Image();
+        this.tree1Tile = new Image(); // Add tree image
         
         // Define enemy paths - 3 spawn points that merge and lead to castle
         // Each path is an array of waypoints
@@ -210,8 +214,14 @@ class TowerDefenseGame {
         this.stone2Tile.src = '/static/img/stone2.png';
         this.stone2Tile.onerror = () => { console.warn('Failed to load stone2.png'); };
         this.generateStoneDecorations();
+        // Load tree image for decorations
+        this.tree1Tile.src = '/static/img/Tree1.png';
+        this.tree1Tile.onerror = () => { console.warn('Failed to load Tree1.png'); };
         // Only generate decorations after tower slots are initialized
         // Load tileset images
+        // Load flower image for decorations
+        this.flower1Tile.src = '/static/img/flower1.png';
+        this.flower1Tile.onerror = () => { console.warn('Failed to load flower1.png'); };
         this.grassTile.src = '/static/img/FieldsTile_38.png'; // Grass tile for background
         this.dirtPath.src = '/static/img/Dirt.png'; // Dirt tile for paths
         this.treeRock.src = '/static/img/trees-rocks.png';
@@ -467,6 +477,14 @@ class TowerDefenseGame {
         // Generate decorations only once, after slots are ready
         if (!this.decorations) {
             this.generateStoneDecorations();
+        }
+        // Generate tree decorations only once, after slots are ready
+        if (!this.treeDecorations) {
+            this.generateTreeDecorations();
+        }
+        // Generate flower decorations only once, after slots are ready
+        if (!this.flowerDecorations) {
+            this.generateFlowerDecorations();
         }
     }
     
@@ -2315,7 +2333,126 @@ class TowerDefenseGame {
                 this.ctx.restore();
             }
         }
+        // Draw trees
+        if (this.treeDecorations) {
+            for (const tree of this.treeDecorations) {
+                if (this.tree1Tile.complete && this.tree1Tile.naturalWidth > 0) {
+                    this.ctx.drawImage(this.tree1Tile, tree.x - 16, tree.y - 16, 32, 32);
+                }
+            }
+        }
+
+        // Draw flowers
+        if (this.flowerDecorations && this.flower1Tile.complete && this.flower1Tile.naturalWidth > 0) {
+            for (const flower of this.flowerDecorations) {
+                this.ctx.save();
+                this.ctx.globalAlpha = flower.alpha || 1.0;
+                this.ctx.drawImage(this.flower1Tile, flower.x, flower.y, flower.size, flower.size);
+                this.ctx.restore();
+            }
+        }
+
+        
     }
+    /**
+         * Generate random flower decorations for the map
+         */
+        generateFlowerDecorations() {
+            const flowerCount = 50; // Number of flowers to scatter
+            const flowerPositions = [];
+            const mapWidth = 640;
+            const mapHeight = 480;
+            const tileSize = 32;
+            const buffer = 20; // Minimum distance from roads, slots, castle, stones, trees
+            let placed = 0;
+            let attempts = 0;
+            const maxAttempts = 500;
+
+            // Helper: check if position is valid
+            const isValid = (x, y) => {
+                // Avoid tower slots
+                for (const slot of this.towerSlots) {
+                    if (Math.abs(x - slot.x) < buffer && Math.abs(y - slot.y) < buffer) return false;
+                }
+                // Avoid castle (center top)
+                if (Math.abs(x - 320) < 60 && y < 120) return false;
+                // Avoid roads (check all paths)
+                for (const path of this.paths) {
+                    for (const pt of path) {
+                        if (Math.abs(x - pt.x) < buffer && Math.abs(y - pt.y) < buffer) return false;
+                    }
+                }
+                // Avoid stones
+                if (this.decorations) {
+                    for (const deco of this.decorations) {
+                        if (Math.abs(x - deco.x) < buffer && Math.abs(y - deco.y) < buffer) return false;
+                    }
+                }
+                // Avoid trees
+                if (this.treeDecorations) {
+                    for (const tree of this.treeDecorations) {
+                        if (Math.abs(x - tree.x) < buffer && Math.abs(y - tree.y) < buffer) return false;
+                    }
+                }
+                return true;
+            };
+
+            // Deterministic scatter using seeded PRNG
+            function mulberry32(a) {
+                return function() {
+                    var t = a += 0x6D2B79F5;
+                    t = Math.imul(t ^ t >>> 15, t | 1);
+                    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+                }
+            }
+            const rand = mulberry32(987654321);
+
+            while (placed < flowerCount && attempts < maxAttempts) {
+                attempts++;
+                const x = Math.floor(rand() * (mapWidth - tileSize - 16)) + tileSize / 2 + 8;
+                const y = Math.floor(rand() * (mapHeight - tileSize - 16)) + tileSize / 2 + 8;
+                if (isValid(x, y)) {
+                    // Avoid placing flowers too close to the castle (center top)
+                    if (Math.abs(x - 320) < 60 && y < 120) continue;
+                    // Avoid trees
+                    let nearTree = false;
+                    if (this.treeDecorations) {
+                        for (const tree of this.treeDecorations) {
+                            if (Math.abs(x - tree.x) < 28 && Math.abs(y - tree.y) < 28) {
+                                nearTree = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (nearTree) continue;
+                    // Avoid stones
+                    let nearStone = false;
+                    if (this.decorations) {
+                        for (const deco of this.decorations) {
+                            if (Math.abs(x - deco.x) < 28 && Math.abs(y - deco.y) < 28) {
+                                nearStone = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (nearStone) continue;
+                    // Avoid tower slots
+                    let nearSlot = false;
+                    for (const slot of this.towerSlots) {
+                        if (Math.abs(x - slot.x) < 28 && Math.abs(y - slot.y) < 28) {
+                            nearSlot = true;
+                            break;
+                        }
+                    }
+                    if (nearSlot) continue;
+                    // If all checks pass, place the flower
+                    flowerPositions.push({ x, y, size: 5, alpha: 0.95 });
+                    placed++;
+                }
+            }
+            this.flowerDecorations = flowerPositions;
+        }
 
     /**
      * Generate random stone1 and stone2 decorations for the map
@@ -2398,9 +2535,48 @@ class TowerDefenseGame {
         }
     }
 
-    // ========================================
-    // BUFF SYSTEM METHODS
-    // ========================================
+    /**
+     * Generate random tree decorations for the map
+     */
+    generateTreeDecorations() {
+        // Place trees only on the top, left, and right edges of the map
+        const treePositions = [];
+        const mapWidth = 640;
+        const mapHeight = 480;
+        const tileSize = 32;
+        const edgeBuffer = 8; // Distance from the edge
+        const spacing = 28; // Space between trees
+
+        // Top edge
+        for (let x = edgeBuffer; x < mapWidth - edgeBuffer; x += spacing) {
+            treePositions.push({ x, y: edgeBuffer });
+        }
+        // Left edge
+        for (let y = edgeBuffer + spacing; y < mapHeight - edgeBuffer - spacing; y += spacing) {
+            treePositions.push({ x: edgeBuffer, y });
+        }
+        // Right edge
+        for (let y = edgeBuffer + spacing; y < mapHeight - edgeBuffer - spacing; y += spacing) {
+            treePositions.push({ x: mapWidth - edgeBuffer, y });
+        }
+
+        // Optionally, add a second row for extra density
+        const secondRowOffset = edgeBuffer + tileSize;
+        // Top second row
+        for (let x = secondRowOffset; x < mapWidth - secondRowOffset; x += spacing) {
+            treePositions.push({ x, y: secondRowOffset });
+        }
+        // Left second row
+        for (let y = secondRowOffset + spacing; y < mapHeight - secondRowOffset - spacing; y += spacing) {
+            treePositions.push({ x: secondRowOffset, y });
+        }
+        // Right second row
+        for (let y = secondRowOffset + spacing; y < mapHeight - secondRowOffset - spacing; y += spacing) {
+            treePositions.push({ x: mapWidth - secondRowOffset, y });
+        }
+
+        this.treeDecorations = treePositions;
+    }
 
     /**
      * Apply damage buff multiplier (called by AdBuffManager)
@@ -3673,8 +3849,10 @@ class TowerDefenseGame {
     getPositionOnPathForPath(distance, path) {
         let currentDist = 0;
         for (let i = 0; i < path.length - 1; i++) {
-            const dx = path[i + 1].x - path[i].x;
-            const dy = path[i + 1].y - path[i].y;
+            const start = path[i];
+            const end = path[i + 1];
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
             const segmentLength = Math.hypot(dx, dy);
             
             if (currentDist + segmentLength >= distance) {
