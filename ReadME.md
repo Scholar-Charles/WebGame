@@ -2,26 +2,26 @@
 
 
 **TechStack**
--Django (Python FrameWork) Back End
--HTML,CSS ,and JAVASCRIPT Front End
--Github for Version Control
--RailWay for Deployment
+- Django (Python FrameWork) Back End
+- HTML,CSS ,and JAVASCRIPT Front End
+- Github for Version Control
+- RailWay for Deployment
 
 
 ***GAME FEATURES***
 
 **AUTHENTICATION**
--Create an Account
--Login Account
+- Create an Account
+- Login Account
 
 **GAME FUNCTIONS**
--Profile
--Leaderboards
--Logout
--Mute Sound
--Pause
--Resume
--Build Tower
+- Profile
+- Leaderboards
+- Logout
+- Mute Sound
+- Pause
+- Resume
+- Build Tower
 
 -How to Build Towers?
  1. Click the Hammer Icon
@@ -50,19 +50,20 @@
 
 ***Need to Install***
 
--pip install django
--pip install psycopg2-binary
--run migrations
--python manage.py runserver
+- pip install django
+- pip install psycopg2-binary
+- run migrations
+- python manage.py runserver
  
--After doing this steps now do python manage.py runserver to start
--Click the http://127.0.0.1:8000/  Ctrl+click
+- After doing this steps now do python manage.py runserver to start
+- Click the http://127.0.0.1:8000/  Ctrl+click
 
 
 **DATABASE**
--Check mydbschema.txt to see the tables
+- Check mydbschema.txt to see the tables
 
 
 ![Game Preview](screenshots/BuildPreview.png)
 ![Game Preview](screenshots/GameScreen.png)
-![Game Preview](screenshots/LobbyScreen.png)
+![Game Preview](screenshots/Lobbyscreen.png)
+
