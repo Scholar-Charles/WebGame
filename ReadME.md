@@ -1,9 +1,12 @@
 *TOWER DEFENSE GAME 2D* 
-**TechStack
+
+
+**TechStack**
 -Django (Python FrameWork) Back End
 -HTML,CSS ,and JAVASCRIPT Front End
 -Github for Version Control
 -RailWay for Deployment
+
 
 *GAME FEATURES*
 
@@ -19,6 +22,12 @@
 -Pause
 -Resume
 -Build Tower
+
+-How to Build Towers?
+ 1. Click the Hammer Icon
+ 2. Click the Interface of the Tower
+ 3. Click the Slots around the map to build
+
 
 ***REWARDING SYSTEM THROUGH ADS***
 1. Buff Rewards
@@ -46,3 +55,7 @@
  
 -After doing this steps now do python manage.py runserver to start
 -Click the http://127.0.0.1:8000/  Ctrl+click
+
+![Game Preview](screenshots/BuildPreview.png)
+![Game Preview](screenshots/GameScreen.png)
+![Game Preview](screenshots/LobbyScreen.png)
