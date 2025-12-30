@@ -418,20 +418,21 @@ button:disabled {
 .wave-title {
     font-family: 'Press Start 2P', 'Courier New', monospace;
     font-size: 24px;
-    color: #ffd700;
+    color: #FFFFFF;
+    font-weight: bold;
     letter-spacing: 3px;
     margin-bottom: 50px;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+    text-shadow: 3px 3px 0px #000000, -1px -1px 0px #000000, 1px -1px 0px #000000, -1px 1px 0px #000000;
     animation: pulse 1s infinite;
 }
 
 .countdown-number {
     font-family: 'Press Start 2P', 'Courier New', monospace;
     font-size: 120px;
-    color: #667eea;
+    color: #FFFFFF;
     font-weight: bold;
     line-height: 1;
-    text-shadow: 0 0 20px rgba(102, 126, 234, 0.8);
+    text-shadow: 4px 4px 0px #000000, -1px -1px 0px #000000, 1px -1px 0px #000000, -1px 1px 0px #000000;
     animation: countdownPulse 1s ease-in-out;
 }
 
@@ -484,27 +485,31 @@ button:disabled {
 .end-game-message {
     font-family: 'Press Start 2P', 'Courier New', monospace;
     font-size: 48px;
-    color: #ffd700;
+    color: #FFFFFF;
+    font-weight: bold;
     text-align: center;
     letter-spacing: 3px;
     margin-bottom: 30px;
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    text-shadow: 4px 4px 0px #000000, -1px -1px 0px #000000, 1px -1px 0px #000000, -1px 1px 0px #000000;
     animation: endGamePulse 0.6s ease-in-out;
 }
 
 .end-game-stats {
     font-family: 'Press Start 2P', 'Courier New', monospace;
     font-size: 18px;
-    color: #667eea;
+    color: #FFFFFF;
+    font-weight: bold;
     text-align: center;
     margin-bottom: 40px;
     line-height: 1.8;
+    text-shadow: 2px 2px 0px #000000;
 }
 
 .end-game-stats-value {
-    color: #4caf50;
+    color: #FFFFFF;
     font-size: 24px;
     font-weight: bold;
+    text-shadow: 2px 2px 0px #000000;
 }
 
 .restart-button {
