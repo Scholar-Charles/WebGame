@@ -532,13 +532,13 @@ class TowerDefenseGame {
             }
             
             // Draw slot number only if unoccupied
-            if (!slot.occupied) {
-                this.ctx.fillStyle = '#ffffff';
-                this.ctx.font = 'bold 14px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText((index + 1).toString(), slot.x, slot.y);
-            }
+            // if (!slot.occupied) {
+            //     this.ctx.fillStyle = '#ffffff';
+            //     this.ctx.font = 'bold 10px Arial';
+            //     this.ctx.textAlign = 'center';
+            //     this.ctx.textBaseline = 'middle';
+            //     this.ctx.fillText((index + 1).toString(), slot.x, slot.y);
+            // }
         });
     }
     
@@ -2177,23 +2177,23 @@ class TowerDefenseGame {
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         }
         
-        // Draw grid overlay to help visualize tile placement (debug)
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        this.ctx.lineWidth = 1;
-        for (let x = 0; x <= this.canvas.width; x += tileSize) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(x, 0);
-            this.ctx.lineTo(x, this.canvas.height);
-            this.ctx.stroke();
-        }
-        for (let y = 0; y <= this.canvas.height; y += tileSize) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, y);
-            this.ctx.lineTo(this.canvas.width, y);
-            this.ctx.stroke();
-        }
+        //     // Draw grid overlay to help visualize tile placement (debug)
+        //     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        //     this.ctx.lineWidth = 1;
+        //     for (let x = 0; x <= this.canvas.width; x += tileSize) {
+        //         this.ctx.beginPath();
+        //         this.ctx.moveTo(x, 0);
+        //         this.ctx.lineTo(x, this.canvas.height);
+        //         this.ctx.stroke();
+        //     }
+        //     for (let y = 0; y <= this.canvas.height; y += tileSize) {
+        //         this.ctx.beginPath();
+        //         this.ctx.moveTo(0, y);
+        //         this.ctx.lineTo(this.canvas.width, y);
+        //         this.ctx.stroke();
+        //     }
+        // }
     }
-
     // Placeholder for future tilemap/decoration functions
     // These will be implemented when map images are imported
 
