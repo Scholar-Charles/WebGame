@@ -2602,7 +2602,7 @@ class TowerDefenseGame {
      * Generate random grass decorations for the map
      */
     generateGrassDecorations() {
-        const grassCount = 1000; // Number of grass tufts to scatter
+        const grassCount = 2500; // Number of grass tufts to scatter
         const grassPositions = [];
         const mapWidth = 640;
         const mapHeight = 480;
