@@ -2606,6 +2606,16 @@ class TowerDefenseGame {
         
         this.ctx.globalAlpha = 1; // Reset alpha
         
+        // Control wave countdown overlay visibility
+        const countdownOverlay = document.getElementById('waveCountdownOverlay');
+        if (countdownOverlay) {
+            if (this.countdownActive && !this.isPaused) {
+                countdownOverlay.classList.remove('hidden');
+            } else {
+                countdownOverlay.classList.add('hidden');
+            }
+        }
+
         // Restore context state
         this.ctx.restore();
         
@@ -2943,11 +2953,24 @@ class TowerDefenseGame {
     }
 
     togglePause() {
-        // Simple pause toggle - countdown continues even when paused
+        // Pause toggle - countdown should pause
         this.isPaused = !this.isPaused;
         const pauseBtn = document.getElementById('pauseGameBtn');
         if (pauseBtn) {
             pauseBtn.textContent = this.isPaused ? 'Resume' : 'Pause';
+        }
+        // Handle countdown pause/resume
+        if (this.countdownActive) {
+            if (this.isPaused) {
+                // Pausing: record when pause started
+                this.countdownPauseStart = Date.now();
+            } else {
+                // Resuming: accumulate paused time
+                if (this.countdownPauseStart) {
+                    this.countdownPausedElapsed += Date.now() - this.countdownPauseStart;
+                    this.countdownPauseStart = null;
+                }
+            }
         }
     }
 
@@ -3306,8 +3329,8 @@ class TowerDefenseGame {
     gameLoop() {
         if (!this.isRunning) return;
 
-        // Always update countdown even when paused (it's just visual)
-        if (this.countdownActive) {
+        // Only update countdown if active and not paused
+        if (this.countdownActive && !this.isPaused) {
             this.updateCountdown();
         }
 
@@ -3487,6 +3510,7 @@ class TowerDefenseGame {
             this.countdownActive = true;
             this.countdownStartTime = Date.now();
             this.countdownPausedElapsed = 0; // Reset paused elapsed time
+            this.countdownPauseStart = null;
             const countdownOverlay = document.getElementById('waveCountdownOverlay');
             if (countdownOverlay) {
                 countdownOverlay.classList.remove('hidden');
@@ -3499,22 +3523,26 @@ class TowerDefenseGame {
     }
 
     updateCountdown() {
-        // Simple countdown using real time (countdown continues even when paused)
-        const elapsed = (Date.now() - this.countdownStartTime) / 1000;
-        const remaining = Math.ceil(3 - elapsed);
-        
+        // Countdown using real time minus paused duration
+        let pausedElapsed = this.countdownPausedElapsed || 0;
+        if (this.isPaused && this.countdownPauseStart) {
+            pausedElapsed += Date.now() - this.countdownPauseStart;
+        }
+        const elapsed = (Date.now() - this.countdownStartTime - pausedElapsed) / 1000;
+        const remaining = Math.max(0, 3 - Math.floor(elapsed));
+
         const countdownNumber = document.getElementById('countdownNumber');
         if (countdownNumber) {
-            countdownNumber.textContent = Math.max(0, remaining);
+            countdownNumber.textContent = remaining;
         }
-        
+
         if (elapsed >= 3) {
             this.countdownActive = false;
             const countdownOverlay = document.getElementById('waveCountdownOverlay');
             if (countdownOverlay) {
                 countdownOverlay.classList.add('hidden');
             }
-            
+
             this.currentWave++;
             if (this.currentWave <= this.waves.length) {
                 this.waveStartTime = Date.now();
