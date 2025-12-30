@@ -53,6 +53,9 @@ class TowerDefenseGame {
         this.bush = new Image();
         this.spawnPoint = new Image();
         this.castle = new Image();
+        // Decorative stone tiles
+        this.stone1Tile = new Image();
+        this.stone2Tile = new Image();
         
         // Define enemy paths - 3 spawn points that merge and lead to castle
         // Each path is an array of waypoints
@@ -83,7 +86,7 @@ class TowerDefenseGame {
         this.path = this.paths[1];
         
         // Decorative tiles - REMOVED (using procedural generation)
-        this.decorations = [];
+        this.decorations = null;
         
         // Add zoom/scale factor
         this.zoomLevel = 1.0; // 1:1 scale for 32x32 tiles on 640x480 canvas (20x15 tiles)
@@ -201,6 +204,13 @@ class TowerDefenseGame {
     }
 
     init() {
+        // Load decorative stone1.png and stone2.png
+        this.stone1Tile.src = '/static/img/stone1.png';
+        this.stone1Tile.onerror = () => { console.warn('Failed to load stone1.png'); };
+        this.stone2Tile.src = '/static/img/stone2.png';
+        this.stone2Tile.onerror = () => { console.warn('Failed to load stone2.png'); };
+        this.generateStoneDecorations();
+        // Only generate decorations after tower slots are initialized
         // Load tileset images
         this.grassTile.src = '/static/img/FieldsTile_38.png'; // Grass tile for background
         this.dirtPath.src = '/static/img/Dirt.png'; // Dirt tile for paths
@@ -453,6 +463,11 @@ class TowerDefenseGame {
         });
         
         console.log(`Initialized ${this.towerSlots.length} tower slots for 3-road map`);
+
+        // Generate decorations only once, after slots are ready
+        if (!this.decorations) {
+            this.generateStoneDecorations();
+        }
     }
     
     drawTowerSlots() {
@@ -2285,8 +2300,102 @@ class TowerDefenseGame {
     }
 
     drawDecorations() {
-        // No longer needed - trees are generated procedurally
-        return;
+        // Draw stone1.png and stone2.png decorations
+        for (const deco of this.decorations) {
+            let img = null;
+            if (deco.type === 'stone1' && this.stone1Tile.complete && this.stone1Tile.naturalWidth > 0) {
+                img = this.stone1Tile;
+            } else if (deco.type === 'stone2' && this.stone2Tile.complete && this.stone2Tile.naturalWidth > 0) {
+                img = this.stone2Tile;
+            }
+            if (img) {
+                this.ctx.save();
+                this.ctx.globalAlpha = deco.alpha;
+                this.ctx.drawImage(img, deco.x, deco.y, deco.size, deco.size);
+                this.ctx.restore();
+            }
+        }
+    }
+
+    /**
+     * Generate random stone1 and stone2 decorations for the map
+     */
+    generateStoneDecorations() {
+        // Deterministic, fixed stone decorations, scattered only in empty spaces
+        // Use a seeded PRNG for repeatability
+        function mulberry32(a) {
+            return function() {
+                var t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+        // Use a fixed seed for the session (could use map size, slot count, etc)
+        const seed = 123456;
+        const rand = mulberry32(seed);
+        const count = 35;
+        const minSize = 18, maxSize = 32;
+        const margin = 24;
+        const slotRadius = 28; // Larger buffer for slots
+        const pathWidth = 32;
+        const castleBuffer = 60;
+        // Precompute all road segments as rectangles for collision
+        const roadRects = [];
+        this.paths.forEach(path => {
+            for (let i = 0; i < path.length - 1; i++) {
+                const start = path[i];
+                const end = path[i + 1];
+                const minX = Math.min(start.x, end.x) - pathWidth / 2 - margin;
+                const maxX = Math.max(start.x, end.x) + pathWidth / 2 + margin;
+                const minY = Math.min(start.y, end.y) - pathWidth / 2 - margin;
+                const maxY = Math.max(start.y, end.y) + pathWidth / 2 + margin;
+                roadRects.push({ minX, maxX, minY, maxY });
+            }
+        });
+        // Castle position (center top)
+        const castle = { x: this.canvas.width / 2, y: 80 };
+        const castleW = 64, castleH = 48;
+        this.decorations = [];
+        let placed = 0, attempts = 0, maxAttempts = 400;
+        while (placed < count && attempts < maxAttempts) {
+            attempts++;
+            const size = Math.floor(rand() * (maxSize - minSize + 1)) + minSize;
+            const x = Math.floor(rand() * (this.canvas.width - size - margin * 2) + margin);
+            const y = Math.floor(rand() * (this.canvas.height - size - margin * 2) + margin);
+            let valid = true;
+            // Avoid road
+            for (const rect of roadRects) {
+                if (x + size > rect.minX && x < rect.maxX && y + size > rect.minY && y < rect.maxY) {
+                    valid = false;
+                    break;
+                }
+            }
+            // Avoid tower slots
+            if (valid && this.towerSlots) {
+                for (const slot of this.towerSlots) {
+                    const dx = (x + size / 2) - slot.x;
+                    const dy = (y + size / 2) - slot.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < slotRadius + size / 2) {
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+            // Avoid castle (buffered)
+            if (valid) {
+                if (x + size > castle.x - castleW / 2 - castleBuffer && x < castle.x + castleW / 2 + castleBuffer &&
+                    y + size > castle.y - castleH / 2 - castleBuffer && y < castle.y + castleH / 2 + castleBuffer) {
+                    valid = false;
+                }
+            }
+            if (valid) {
+                // Randomly choose stone1 or stone2 (deterministic)
+                const type = rand() < 0.5 ? 'stone1' : 'stone2';
+                this.decorations.push({ x, y, size, alpha: 0.8, type });
+                placed++;
+            }
+        }
     }
 
     // ========================================
@@ -2372,6 +2481,8 @@ class TowerDefenseGame {
         // === MAP RENDERING (Backbone) ===
         // Layer 1: Background
         this.drawGrassBackground();
+        // Layer 1.5: Decorative grass1.png
+        this.drawDecorations();
         
         // Layer 2: Apply zoom transformation
         this.ctx.save();
