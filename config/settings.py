@@ -78,7 +78,7 @@ TEMPLATES = [
 import dj_database_url
 DATABASES = {
     'default': dj_database_url.config(
-        default=env('DATABASE_URL', default='postgres://postgres:postgres@localhost:5432/WebGame'),
+        default=env('DATABASE_URL', default='postgresql://postgres:gNzufxRauxcxyaGzCkKipnQvStwyuylW@postgres.railway.internal:5432/railway'),
         conn_max_age=600,
         ssl_require=False
     )
@@ -110,7 +110,11 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'game_home'
 LOGOUT_REDIRECT_URL = 'login'
 
-CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['http://localhost:8000', 'http://127.0.0.1:8000'])
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://*.up.railway.app'
+])
 
 # Content Security Policy
 CSP_DEFAULT_SRC = ("'self'",)
