@@ -63,6 +63,9 @@ class TowerDefenseGame {
         // Decorative grass tile
         this.grass1Tile = new Image();
         this.grassDecorations = null;
+        // Decorative tree trunk tile
+        this.treeTrunkTile = new Image();
+        this.treeTrunkDecorations = null;
         
         // Define enemy paths - 3 spawn points that merge and lead to castle
         // Each path is an array of waypoints
@@ -223,6 +226,9 @@ class TowerDefenseGame {
         // Load grass image for decorations
         this.grass1Tile.src = '/static/img/grass01.png';
         this.grass1Tile.onerror = () => { console.warn('Failed to load grass image at /static/img/grass.01png'); };
+        // Load tree trunk image for decorations
+        this.treeTrunkTile.src = '/static/img/TreeTrunk.png';
+        this.treeTrunkTile.onerror = () => { console.warn('Failed to load tree trunk image at /static/img/TreeTrunk.png'); };
         // Only generate decorations after tower slots are initialized
         // Load tileset images
         // Load flower image for decorations
@@ -495,6 +501,10 @@ class TowerDefenseGame {
         // Generate grass decorations only once, after slots are ready
         if (!this.grassDecorations) {
             this.generateGrassDecorations();
+        }
+        // Generate tree trunk decorations only once, after slots are ready
+        if (!this.treeTrunkDecorations) {
+            this.generateTreeTrunkDecorations();
         }
     }
     
@@ -2328,6 +2338,16 @@ class TowerDefenseGame {
     }
 
     drawDecorations() {
+        // Draw tree trunk decorations
+        if (this.treeTrunkDecorations && this.treeTrunkTile.complete && this.treeTrunkTile.naturalWidth > 0) {
+            for (const trunk of this.treeTrunkDecorations) {
+                this.ctx.save();
+                this.ctx.globalAlpha = trunk.alpha || 0.9;
+                this.ctx.drawImage(this.treeTrunkTile, trunk.x, trunk.y, trunk.size, trunk.size);
+                this.ctx.restore();
+            }
+        }
+           
         // Draw grass decorations
         if (this.grassDecorations && this.grass1Tile.complete && this.grass1Tile.naturalWidth > 0) {
             for (const grass of this.grassDecorations) {
@@ -2373,12 +2393,90 @@ class TowerDefenseGame {
 
         
     }
+
+     /**
+             * Generate random tree trunk decorations for the map
+             */
+            generateTreeTrunkDecorations() {
+                const trunkCount = 5; // Number of trunks to scatter
+                const trunkPositions = [];
+                const mapWidth = 640;
+                const mapHeight = 480;
+                const tileSize = 32;
+                const buffer = 22; // Minimum distance from roads, slots, castle, stones, trees, flowers, grass
+                let placed = 0;
+                let attempts = 0;
+                const maxAttempts = 400;
+
+                // Helper: check if position is valid
+                const isValid = (x, y) => {
+                    // Avoid tower slots
+                    for (const slot of this.towerSlots) {
+                        if (Math.abs(x - slot.x) < buffer && Math.abs(y - slot.y) < buffer) return false;
+                    }
+                    // Avoid castle (center top)
+                    if (Math.abs(x - 320) < 60 && y < 120) return false;
+                    // Avoid roads (check all paths)
+                    for (const path of this.paths) {
+                        for (const pt of path) {
+                            if (Math.abs(x - pt.x) < buffer && Math.abs(y - pt.y) < buffer) return false;
+                        }
+                    }
+                    // Avoid stones
+                    if (this.decorations) {
+                        for (const deco of this.decorations) {
+                            if (Math.abs(x - deco.x) < buffer && Math.abs(y - deco.y) < buffer) return false;
+                        }
+                    }
+                    // Avoid trees
+                    if (this.treeDecorations) {
+                        for (const tree of this.treeDecorations) {
+                            if (Math.abs(x - tree.x) < buffer && Math.abs(y - tree.y) < buffer) return false;
+                        }
+                    }
+                    // Avoid flowers
+                    if (this.flowerDecorations) {
+                        for (const flower of this.flowerDecorations) {
+                            if (Math.abs(x - flower.x) < buffer && Math.abs(y - flower.y) < buffer) return false;
+                        }
+                    }
+                    // Avoid grass
+                    if (this.grassDecorations) {
+                        for (const grass of this.grassDecorations) {
+                            if (Math.abs(x - grass.x) < buffer && Math.abs(y - grass.y) < buffer) return false;
+                        }
+                    }
+                    return true;
+                };
+
+                // Deterministic scatter using seeded PRNG
+                function mulberry32(a) {
+                    return function() {
+                        var t = a += 0x6D2B79F5;
+                        t = Math.imul(t ^ t >>> 15, t | 1);
+                        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+                    }
+                }
+                const rand = mulberry32(135791113); // Unique seed for trunks
+
+                while (placed < trunkCount && attempts < maxAttempts) {
+                    attempts++;
+                    const x = Math.floor(rand() * (mapWidth - tileSize - 12)) + tileSize / 2 + 6;
+                    const y = Math.floor(rand() * (mapHeight - tileSize - 12)) + tileSize / 2 + 6;
+                    if (isValid(x, y)) {
+                        trunkPositions.push({ x, y, size: 20, alpha: 0.9 });
+                        placed++;
+                    }
+                }
+                this.treeTrunkDecorations = trunkPositions;
+            }
     
     /**
          * Generate random flower decorations for the map
          */
         generateFlowerDecorations() {
-            const flowerCount = 50; // Number of flowers to scatter
+            const flowerCount = 20; // Number of flowers to scatter
             const flowerPositions = [];
             const mapWidth = 640;
             const mapHeight = 480;
@@ -2491,7 +2589,7 @@ class TowerDefenseGame {
         // Use a fixed seed for the session (could use map size, slot count, etc)
         const seed = 123456;
         const rand = mulberry32(seed);
-        const count = 35;
+        const count = 15;
         const minSize = 18, maxSize = 32;
         const margin = 24;
         const slotRadius = 28; // Larger buffer for slots
@@ -2602,7 +2700,7 @@ class TowerDefenseGame {
      * Generate random grass decorations for the map
      */
     generateGrassDecorations() {
-        const grassCount = 2500; // Number of grass tufts to scatter
+        const grassCount = 1000; // Number of grass tufts to scatter
         const grassPositions = [];
         const mapWidth = 640;
         const mapHeight = 480;
