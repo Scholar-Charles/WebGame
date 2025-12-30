@@ -2733,16 +2733,27 @@ class TowerDefenseGame {
     }
 
     showGameEndOverlay() {
+
         const endOverlay = document.getElementById('gameEndOverlay');
         const finalScoreEl = document.getElementById('finalScore');
         const waveReachedEl = document.getElementById('waveReached');
         const goldEarnedEl = document.getElementById('goldEarned');
-        
+        const ads5LivesBtn = document.getElementById('ads5LivesBtn');
+
         if (endOverlay && finalScoreEl && waveReachedEl && goldEarnedEl) {
             finalScoreEl.textContent = this.score;
             waveReachedEl.textContent = this.currentWave;
             goldEarnedEl.textContent = this.playerGold;
             endOverlay.classList.remove('hidden');
+        }
+
+        // Show the Click Ads +5 Lives button only if player lost all lives
+        if (ads5LivesBtn) {
+            if (this.playerLives <= 0) {
+                ads5LivesBtn.style.display = '';
+            } else {
+                ads5LivesBtn.style.display = 'none';
+            }
         }
         
         // Set up restart button listener
@@ -2768,6 +2779,7 @@ class TowerDefenseGame {
                 this.currentWave = 1;
                 this.score = 0;
                 this.gameStartTime = null;
+                // Only reset towers, enemies, projectiles, selectedTower, cooldowns, wave queue, timers
                 this.towers = [];
                 this.enemies = [];
                 this.projectiles = [];
@@ -2779,11 +2791,57 @@ class TowerDefenseGame {
                 this.countdownStartTime = null;
                 this.gameTitleDropTime = null;
                 this.pauseMenuBattleMusicMuted = false;
+                // DO NOT reset or re-initialize towerSlots array!
                 // Reset UI
                 this.updateUI();
                 this.displayWaveInfo();
                 // Start the game directly (like Start Battle)
                 this.startGame();
+            };
+        }
+
+        // Set up Click Ads +5 Lives button listener
+        if (ads5LivesBtn) {
+            ads5LivesBtn.onclick = () => {
+                // Open ad website in a new tab
+                window.open('https://www.wikipedia.org/', '_blank');
+                // Show countdown on button
+                let countdown = 5;
+                ads5LivesBtn.disabled = true;
+                const originalText = ads5LivesBtn.innerHTML;
+                ads5LivesBtn.innerHTML = `<span>Wait ${countdown}s...</span>`;
+                const interval = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        ads5LivesBtn.innerHTML = `<span>Wait ${countdown}s...</span>`;
+                    } else {
+                        clearInterval(interval);
+                        ads5LivesBtn.innerHTML = originalText;
+                        ads5LivesBtn.disabled = false;
+                        // Add 5 lives and resume game
+                        this.playerLives += 5;
+                        // Hide game end overlay
+                        if (endOverlay) {
+                            endOverlay.classList.add('hidden');
+                        }
+                        // Resume game on same wave/scenario
+                        this.isRunning = true;
+                        this.isPaused = false;
+                        this.updateUI();
+                        this.displayWaveInfo();
+                        // Resume battle music if not muted
+                        if (!this.musicMuted && this.musicStarted) {
+                            this.battleMusic.currentTime = 0;
+                            this.battleMusic.play().catch(() => {});
+                        }
+                        // Start game loop if not already running
+                        if (typeof this.gameLoop === 'function') {
+                            requestAnimationFrame(() => this.gameLoop());
+                        }
+                        // Show message
+                        this.showGameMessage('+5 Lives!');
+                    }
+                }, 1000);
             };
         }
 
