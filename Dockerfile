@@ -20,5 +20,5 @@ RUN python manage.py collectstatic --noinput
 # Expose port
 EXPOSE 8000
 
-# Start server
-CMD gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}
+# Start server (TEMP: open shell for debugging)
+CMD ["/bin/bash"]
