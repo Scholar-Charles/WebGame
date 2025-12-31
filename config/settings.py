@@ -38,7 +38,12 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
 DEBUG = env('DEBUG')
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+    'localhost',
+    '127.0.0.1',
+    'tower-defense-2d.up.railway.app',
+    # Add your custom domain here if you have one
+])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -80,30 +85,19 @@ TEMPLATES = [
     },
 ]
 
-# import dj_database_url
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default=env('DATABASE_URL', default='postgres://postgres:postgres@localhost:5432/WebGame'),
-#         conn_max_age=600,
-#         ssl_require=False
-#     )
-# }
+
+import dj_database_url
+DATABASES = {
+    'default': dj_database_url.config(
+        default=env('DATABASE_URL', default='postgres://postgres:postgres@localhost:5432/WebGame'),
+        conn_max_age=600,
+        ssl_require=False
+    )
+}
 
 WSGI_APPLICATION = 'config.wsgi.application'
  
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT'),
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
-    }
-}
+## Removed old DATABASES config in favor of dj_database_url
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -123,6 +117,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+
+
+# Local media file setup (suitable for demo/showcase, not for persistent uploads)
 MEDIA_URL = '/audio/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'audio')
 
