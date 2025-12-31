@@ -3,4 +3,13 @@ gunicorn
 psycopg2-binary
 dj-database-url
 django-environ
+
+
 whitenoise
+python-dotenv
+requests
+sqlparse
+stripe
+typing_extensions
+tzdata
+urllib3

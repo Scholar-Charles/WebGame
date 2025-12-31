@@ -20,9 +20,13 @@ LOGGING = {
     },
 }
 
+from email.policy import default
 import os
 from pathlib import Path
+import django
 import environ
+from dotenv import load_dotenv
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -34,7 +38,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('SECRET_KEY', default='unsafe-secret-key')
 DEBUG = env('DEBUG')
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'tower-defense-2d.up.railway.app']
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -76,13 +80,24 @@ TEMPLATES = [
     },
 ]
 
-import dj_database_url
+# import dj_database_url
+# DATABASES = {
+#     'default': dj_database_url.config(
+#         default=env('DATABASE_URL', default='postgres://postgres:postgres@localhost:5432/WebGame'),
+#         conn_max_age=600,
+#         ssl_require=False
+#     )
+# }
+
 DATABASES = {
-    'default': dj_database_url.config(
-        default=env('DATABASE_URL', default='postgres://postgres:postgres@localhost:5432/WebGame'),
-        conn_max_age=600,
-        ssl_require=False
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
+    }
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -101,9 +116,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/audio/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'audio')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
